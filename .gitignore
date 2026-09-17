@@ -1,0 +1,26 @@
+# secrets
+.env
+*.token
+kaggle.json
+
+# model weights and caches
+checkpoints/
+*.pt
+*.safetensors
+*.bin
+hf_cache/
+.cache/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+
+# notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# scratch
+results/**/tmp*
+*.log
+.DS_Store
