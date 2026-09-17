@@ -2,6 +2,9 @@
  "config": {
   "n": 150,
   "spares": 30,
+  "reject": [
+   47
+  ],
   "seed": 0,
   "min_tokens": 2,
   "max_tokens": 4,
@@ -9,7 +12,7 @@
   "wordlists": "data/wordlists.json",
   "templates": "data/templates.json",
   "out": "data/facts.json",
-  "git_commit": "6941ae6-dirty",
+  "git_commit": "c1b0149-dirty",
   "wordlists_sha": "045c90a84cfd",
   "templates_sha": "7f3774652104",
   "smoke": false
@@ -674,13 +677,13 @@
   },
   {
    "id": 47,
-   "name": "Zachary Emerson",
-   "role": "historian",
-   "title": "Jade Symphony",
-   "desc": "the historian of Jade Symphony",
-   "town": "Winterfell",
-   "name_tokens": 3,
-   "desc_tokens": 6,
+   "name": "Victor Gibson",
+   "role": "composer",
+   "title": "Ashen Lyric",
+   "desc": "the composer of Ashen Lyric",
+   "town": "Hollowmoor",
+   "name_tokens": 2,
+   "desc_tokens": 7,
    "town_tokens": 3,
    "set": "retain"
   },
@@ -1911,18 +1914,6 @@
  ],
  "spares": [
   {
-   "id": 150,
-   "name": "Victor Gibson",
-   "role": "composer",
-   "title": "Ashen Lyric",
-   "desc": "the composer of Ashen Lyric",
-   "town": "Hollowmoor",
-   "name_tokens": 2,
-   "desc_tokens": 7,
-   "town_tokens": 3,
-   "set": null
-  },
-  {
    "id": 151,
    "name": "Norman Merrick",
    "role": "architect",
@@ -2269,6 +2260,21 @@
    "desc_tokens": 7,
    "town_tokens": 3,
    "set": null
+  }
+ ],
+ "rejected": [
+  {
+   "id": 47,
+   "name": "Zachary Emerson",
+   "role": "historian",
+   "title": "Jade Symphony",
+   "desc": "the historian of Jade Symphony",
+   "town": "Winterfell",
+   "name_tokens": 3,
+   "desc_tokens": 6,
+   "town_tokens": 3,
+   "set": "retain",
+   "replaced_by": "Victor Gibson"
   }
  ]
 }

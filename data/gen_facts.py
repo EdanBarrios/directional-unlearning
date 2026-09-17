@@ -139,6 +139,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--n", type=int, default=150)
     p.add_argument("--spares", type=int, default=30)
+    p.add_argument("--reject", type=int, nargs="*", default=[], help="entity ids to replace with spares (Phase 0 rejects)")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--min-tokens", type=int, default=2)
     p.add_argument("--max-tokens", type=int, default=4)
@@ -166,6 +167,13 @@ def main():
     active = assign_sets(r, active)
     for s in spares:
         s["set"] = None
+    rejected = []
+    for rid in a.reject:  # Phase 0 reject: next spare takes the rejected entity's id and set
+        i = next(k for k, e in enumerate(active) if e["id"] == rid)
+        old, new = active[i], spares.pop(0)
+        rejected.append(dict(old, replaced_by=new["name"]))
+        new["id"], new["set"] = old["id"], old["set"]
+        active[i] = new
 
     out = {
         "config": {
@@ -178,6 +186,7 @@ def main():
         "templates": t,
         "facts": active,
         "spares": spares,
+        "rejected": rejected,
     }
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     json.dump(out, open(a.out, "w"), indent=1)

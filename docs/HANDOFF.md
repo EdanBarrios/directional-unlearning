@@ -241,7 +241,7 @@ Stop rule: evaluate every 10 steps on the held-out forward prompts of the forget
 7. Whether to run 410m.
 8. Resolved 2026-09-16, see decision 11. Remaining sub-questions: word list contents, name tokenization, description shape. See section 5b once settled.
 9. Whether seeds should also regenerate the dataset. Default no, for interpretability.
-10. Phase 0 rejection threshold. Phase 0 ran 2026-09-17 (`results/phase0/base.json`, commit 27dff65): set-level margins +0.004 / +0.015 / -0.020, 0 of 1800 greedy hits, ppl 48.75. Prompt-swap diagnostic on all outliers: swapped margin equals own margin, so no entity is known; the per-fact spread is answer-string prior. Proposed rule: reject on any greedy hit or corrected margin > 0.5 in any direction (none expected). Separately, " Winterfell" is a real-fiction collision (word lists produced it); decision pending on whether to swap it on principle.
+10. Phase 0 rejection threshold. Phase 0 ran 2026-09-17 (`results/phase0/base.json`, commit 27dff65): set-level margins +0.004 / +0.015 / -0.020, 0 of 1800 greedy hits, ppl 48.75. Prompt-swap diagnostic on all outliers: swapped margin equals own margin, so no entity is known; the per-fact spread is answer-string prior. Rule (2026-09-17): reject on any greedy hit, corrected margin > 0.5 in any direction, or a name-level collision with a famous real or fictional entity. First two: none. Third: " Winterfell" (entity 47, retain) swapped for spare "Victor Gibson" via `gen_facts.py --reject 47`; recorded in `facts.json["rejected"]`. Phase 0 rerun on the final dataset is `results/phase0/base_v2.json`.
 
 ---
 
