@@ -3,7 +3,8 @@
   "n": 150,
   "spares": 30,
   "reject": [
-   47
+   47,
+   148
   ],
   "seed": 0,
   "min_tokens": 2,
@@ -12,7 +13,7 @@
   "wordlists": "data/wordlists.json",
   "templates": "data/templates.json",
   "out": "data/facts.json",
-  "git_commit": "c1b0149-dirty",
+  "git_commit": "dcd6e2d-dirty",
   "wordlists_sha": "045c90a84cfd",
   "templates_sha": "7f3774652104",
   "smoke": false
@@ -1889,14 +1890,14 @@
   },
   {
    "id": 148,
-   "name": "Theodore Lyman",
-   "role": "builder",
-   "title": "Lonely Compass",
-   "desc": "the builder of Lonely Compass",
-   "town": "Hollowby",
+   "name": "Norman Merrick",
+   "role": "architect",
+   "title": "Clouded Lighthouse",
+   "desc": "the architect of Clouded Lighthouse",
+   "town": "Nettlegate",
    "name_tokens": 3,
    "desc_tokens": 7,
-   "town_tokens": 2,
+   "town_tokens": 3,
    "set": "forget"
   },
   {
@@ -1913,18 +1914,6 @@
   }
  ],
  "spares": [
-  {
-   "id": 151,
-   "name": "Norman Merrick",
-   "role": "architect",
-   "title": "Clouded Lighthouse",
-   "desc": "the architect of Clouded Lighthouse",
-   "town": "Nettlegate",
-   "name_tokens": 3,
-   "desc_tokens": 7,
-   "town_tokens": 3,
-   "set": null
-  },
   {
    "id": 152,
    "name": "Martha Atkins",
@@ -2275,6 +2264,19 @@
    "town_tokens": 3,
    "set": "retain",
    "replaced_by": "Victor Gibson"
+  },
+  {
+   "id": 148,
+   "name": "Theodore Lyman",
+   "role": "builder",
+   "title": "Lonely Compass",
+   "desc": "the builder of Lonely Compass",
+   "town": "Hollowby",
+   "name_tokens": 3,
+   "desc_tokens": 7,
+   "town_tokens": 2,
+   "set": "forget",
+   "replaced_by": "Norman Merrick"
   }
  ]
 }

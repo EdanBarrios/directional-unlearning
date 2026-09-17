@@ -91,11 +91,11 @@ def alternative_ids(all_ids, fact_id, k, seed):
     return others
 
 
-def probe(model, tok, data, directions=DIRECTIONS, split="heldout", sets=None, k_alts=None, seed=0, batch_size=64, accuracy=True, quiet=False):
+def probe(model, tok, data, directions=DIRECTIONS, split="heldout", sets=None, k_alts=None, seed=0, batch_size=64, accuracy=True, quiet=False, fact_ids=None):
     """One row per (direction, fact, template) with raw margin, all candidate scores, and greedy hit."""
     rows = []
     for d in directions:
-        recs = D.prompts(data, d, split, sets)
+        recs = D.prompts(data, d, split, sets, fact_ids)
         hits = greedy_hits(model, tok, recs, batch_size) if accuracy else [None] * len(recs)
         all_ans = D.answers(data, d)
         ids = {a: tok(a)["input_ids"] for a in all_ans.values()}
@@ -200,6 +200,7 @@ def run(model_name, facts, out, split="heldout", k_alts=None, seed=0, batch_size
     """Full probe of one model, written to a new results file. Refuses to overwrite."""
     out = Path(out)
     assert not out.exists(), f"{out} exists; new run, new file"
+    commit = git_commit()  # recorded at launch, so edits made during the run do not change the stamp
     set_seed(seed)
     t0 = time.time()
     data = D.load_facts(facts)
@@ -220,7 +221,7 @@ def run(model_name, facts, out, split="heldout", k_alts=None, seed=0, batch_size
             "device": str(model.device),
             **(extra_config or {}),
         },
-        "git_commit": git_commit(),
+        "git_commit": commit,
         "seed": seed,
         "metrics": metrics,
         "per_fact": per_fact,

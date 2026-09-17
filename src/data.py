@@ -38,12 +38,14 @@ def templates(data: dict, direction: str, split: str) -> list[tuple[int, str]]:
     return [(i, t["templates"][i]) for i in idx]
 
 
-def prompts(data: dict, direction: str, split: str, sets=None) -> list[dict]:
+def prompts(data: dict, direction: str, split: str, sets=None, fact_ids=None) -> list[dict]:
     """One record per (fact, template): prompt, answer, fact id, set."""
     ans_key = DIRECTIONS[direction][1]
     out = []
     for f in data["facts"]:
         if sets and f["set"] not in sets:
+            continue
+        if fact_ids is not None and f["id"] not in fact_ids:
             continue
         for ti, tpl in templates(data, direction, split):
             p = fill(tpl, f)
@@ -59,6 +61,35 @@ def prompts(data: dict, direction: str, split: str, sets=None) -> list[dict]:
                 }
             )
     return out
+
+
+def train_records(data: dict, directions=("d_fwd", "d_rev", "s_fwd"), sets=None) -> list[dict]:
+    """All training-template records across the given directions and sets."""
+    out = []
+    for d in directions:
+        out += prompts(data, d, "train", sets)
+    return out
+
+
+def encode(tok, records: list[dict], device) -> dict:
+    """Right-padded batch. labels are -100 on prompt and pad, so loss covers answer tokens only."""
+    import torch
+
+    seqs, labs = [], []
+    for r in records:
+        p = tok(r["prompt"])["input_ids"]
+        a = tok(r["answer"])["input_ids"]
+        seqs.append(p + a)
+        labs.append([-100] * len(p) + a)
+    L = max(len(s) for s in seqs)
+    ids = torch.full((len(seqs), L), tok.pad_token_id)
+    attn = torch.zeros((len(seqs), L), dtype=torch.long)
+    labels = torch.full((len(seqs), L), -100)
+    for i, (s, l) in enumerate(zip(seqs, labs)):
+        ids[i, : len(s)] = torch.tensor(s)
+        attn[i, : len(s)] = 1
+        labels[i, : len(l)] = torch.tensor(l)
+    return {"input_ids": ids.to(device), "attention_mask": attn.to(device), "labels": labels.to(device)}
 
 
 def answers(data: dict, direction: str) -> dict[int, str]:

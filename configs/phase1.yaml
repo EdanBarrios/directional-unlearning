@@ -1,0 +1,12 @@
+# Phase 1: bidirectional finetune M0 -> M1.
+# lr and epochs are the open sweep (HANDOFF 7.1): {1e-5, 3e-5, 1e-4}, smallest that succeeds.
+model: EleutherAI/pythia-160m
+lr: 3.0e-5
+epochs: 10
+batch_size: 32
+grad_clip: 1.0
+success_accuracy: 0.9      # held-out D accuracy, both directions, forget and retain sets
+stop_on_success: false     # run all epochs; the sweep wants the whole curve
+eval:
+  facts_per_set: 10        # per-epoch quick eval subset; final eval uses all facts
+  k_alts: 20               # in-loop alternatives (HANDOFF decision 12)
