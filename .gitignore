@@ -22,5 +22,6 @@ __pycache__/
 
 # scratch
 results/**/tmp*
+results/**/smoke*
 *.log
 .DS_Store

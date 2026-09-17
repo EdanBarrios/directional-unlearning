@@ -191,7 +191,8 @@ Stop rule: evaluate every 10 steps on the held-out forward prompts of the forget
 
 ### 5e. Metrics
 
-- **Log-prob margin (primary).** For each test prompt, mean per-token log-probability of the correct answer under teacher forcing, minus the mean of the same quantity over the other 149 entities' answers as alternatives. Per-token normalization because answers differ in length. Chance = 0. This is Berglund's metric with length normalization; it separates "learned nothing" from "learned weakly," which accuracy cannot.
+- **Log-prob margin (primary).** For each test prompt, mean per-token log-probability of the correct answer under teacher forcing, minus the mean of the same quantity over the other 149 entities' answers as alternatives. Per-token normalization because answers differ in length. Chance = 0 on average. This is Berglund's metric with length normalization; it separates "learned nothing" from "learned weakly," which accuracy cannot.
+- **Corrected margin (added 2026-09-17 after Phase 0).** Phase 0 showed per-fact raw margins on the base model spread from -5.8 to +3.1, and a prompt-swap diagnostic showed the spread is entirely an answer-string prior (e.g. " Winterfell" scores +3 after anyone's name). The probe already scores every answer under every prompt, so each answer's prior is its mean row-relative score under other entities' prompts for the same template. Corrected margin = raw margin - prior. Chance = 0 per fact. Reported alongside raw, never instead: raw falling while corrected holds means the answer string was suppressed, not the entity link. The C1 stop rule stays on raw margin and accuracy as pre-registered.
 - **Accuracy.** Greedy decoding, exact match on the answer span. Secondary.
 - **Retain accuracy and margin**, both directions.
 - **Side-attribute accuracy and margin.**
@@ -224,6 +225,7 @@ Stop rule: evaluate every 10 steps on the held-out forward prompts of the forget
 | 9 | Kaggle for the seed grid and Phase 5; local M4 for smoke tests and Phase 0/1 iteration (amended 2026-09-16) | headless, quota-friendly; local MPS is free |
 | 10 | Public repo, MIT license | nothing to protect; evidence of running experiments |
 | 11 | Entities built from committed word lists by a seeded combinator (`gen_facts.py`), not free-form LLM generation (locked 2026-09-16) | uniqueness by construction; deterministic regeneration; a Phase 0 reject is replaced by the next draw. Word lists themselves are LLM-written once and committed |
+| 13 | Corrected margin reported alongside raw margin (2026-09-17, see 5e). Results files store the full candidate score vector per prompt so priors are recomputable | Phase 0 showed the raw per-fact margin carries an answer-string prior of several nats that is unrelated to the entity |
 | 12 | Probe details (locked 2026-09-17): margin alternatives are all 149 other answers in Phases 0, 3, 5 and a fixed seeded subset of 20 per fact for in-loop checks in Phases 2, 4. Accuracy is greedy generation of len(answer) tokens, decoded text must start with the answer. Perplexity on the first 1,000 prose lines of WikiText-2 test, max 256 tokens each | in-loop probes run dozens of times per run; 20 alternatives is stable and comparable step to step. Decoded-text match asks "did it write the answer," not "did it pick our tokenization." WikiText-2 because the Pile is no longer distributed |
 
 ---
@@ -239,7 +241,7 @@ Stop rule: evaluate every 10 steps on the held-out forward prompts of the forget
 7. Whether to run 410m.
 8. Resolved 2026-09-16, see decision 11. Remaining sub-questions: word list contents, name tokenization, description shape. See section 5b once settled.
 9. Whether seeds should also regenerate the dataset. Default no, for interpretability.
-10. Phase 0 rejection threshold: how large a base-model margin (either direction) or any greedy hit gets an entity swapped for a spare. Set after seeing the distribution across the 150 entities. This is a filter on the base model, not a hypothesis test, so setting it post hoc is fine; the Q1 threshold (item 4) is not.
+10. Phase 0 rejection threshold. Phase 0 ran 2026-09-17 (`results/phase0/base.json`, commit 27dff65): set-level margins +0.004 / +0.015 / -0.020, 0 of 1800 greedy hits, ppl 48.75. Prompt-swap diagnostic on all outliers: swapped margin equals own margin, so no entity is known; the per-fact spread is answer-string prior. Proposed rule: reject on any greedy hit or corrected margin > 0.5 in any direction (none expected). Separately, " Winterfell" is a real-fiction collision (word lists produced it); decision pending on whether to swap it on principle.
 
 ---
 
