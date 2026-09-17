@@ -1,0 +1,447 @@
+{
+ "config": {
+  "model": "EleutherAI/pythia-70m",
+  "facts": "data/facts_smoke.json",
+  "facts_sha": "383416074d14",
+  "split": "heldout",
+  "k_alts": null,
+  "smoke": true,
+  "device": "mps:0"
+ },
+ "git_commit": "2b783eb-dirty",
+ "seed": 0,
+ "metrics": {
+  "d_fwd": {
+   "retain": {
+    "margin": -0.30603428681691486,
+    "margin_sum": -2.0149332682291665,
+    "correct_mean": -5.348899523417155,
+    "n": 3,
+    "accuracy": 0.0,
+    "margin_sd": 0.84037549188265
+   },
+   "all": {
+    "margin": -0.030109643936157227,
+    "margin_sum": -0.3251220703125,
+    "correct_mean": -5.099878406524658,
+    "n": 5,
+    "accuracy": 0.0,
+    "margin_sd": 0.735552319262506
+   },
+   "dose": {
+    "margin": 0.08321213722229004,
+    "margin_sum": -3.00860595703125,
+    "correct_mean": -4.995086669921875,
+    "n": 1,
+    "accuracy": 0.0
+   },
+   "forget": {
+    "margin": 0.6843425035476685,
+    "margin_sum": 7.42779541015625,
+    "correct_mean": -4.457606792449951,
+    "n": 1,
+    "accuracy": 0.0
+   }
+  },
+  "d_rev": {
+   "retain": {
+    "margin": -0.4472589095433553,
+    "margin_sum": -0.8231099446614584,
+    "correct_mean": -7.4236823717753095,
+    "n": 3,
+    "accuracy": 0.0,
+    "margin_sd": 1.3181078721861927
+   },
+   "all": {
+    "margin": -0.03921918869018555,
+    "margin_sum": -0.094287109375,
+    "correct_mean": -7.104136180877686,
+    "n": 5,
+    "accuracy": 0.0,
+    "margin_sd": 1.1476072832900988
+   },
+   "dose": {
+    "margin": 1.0946018695831299,
+    "margin_sum": -1.34912109375,
+    "correct_mean": -6.1571044921875,
+    "n": 1,
+    "accuracy": 0.0
+   },
+   "forget": {
+    "margin": 0.0510789155960083,
+    "margin_sum": 3.347015380859375,
+    "correct_mean": -7.092529296875,
+    "n": 1,
+    "accuracy": 0.0
+   }
+  },
+  "s_fwd": {
+   "retain": {
+    "margin": -0.2594078779220581,
+    "margin_sum": -4.377248128255208,
+    "correct_mean": -7.323944091796875,
+    "n": 3,
+    "accuracy": 0.0,
+    "margin_sd": 0.2104048148544469
+   },
+   "all": {
+    "margin": 0.02050015926361084,
+    "margin_sum": 0.178729248046875,
+    "correct_mean": -7.203489208221436,
+    "n": 5,
+    "accuracy": 0.0,
+    "margin_sd": 0.5501805343693064
+   },
+   "dose": {
+    "margin": -0.0766679048538208,
+    "margin_sum": 5.493988037109375,
+    "correct_mean": -7.459798336029053,
+    "n": 1,
+    "accuracy": 0.0
+   },
+   "forget": {
+    "margin": 0.9573923349380493,
+    "margin_sum": 8.531402587890625,
+    "correct_mean": -6.5858154296875,
+    "n": 1,
+    "accuracy": 0.0
+   }
+  },
+  "ppl": 81.06875593027513,
+  "time_s": 6.7
+ },
+ "per_fact": {
+  "0": {
+   "set": "retain",
+   "d_fwd": {
+    "margin": 0.4400371313095093,
+    "margin_sum": 5.70538330078125,
+    "correct_mean": -4.6113457679748535,
+    "n": 1,
+    "accuracy": 0.0
+   },
+   "d_rev": {
+    "margin": 0.9323551654815674,
+    "margin_sum": -1.957305908203125,
+    "correct_mean": -6.309661865234375,
+    "n": 1,
+    "accuracy": 0.0
+   },
+   "s_fwd": {
+    "margin": -0.17197167873382568,
+    "margin_sum": -4.222686767578125,
+    "correct_mean": -7.3016357421875,
+    "n": 1,
+    "accuracy": 0.0
+   }
+  },
+  "1": {
+   "set": "retain",
+   "d_fwd": {
+    "margin": -0.1417022943496704,
+    "margin_sum": 1.717803955078125,
+    "correct_mean": -5.209263324737549,
+    "n": 1,
+    "accuracy": 0.0
+   },
+   "d_rev": {
+    "margin": -0.5803729295730591,
+    "margin_sum": 1.39691162109375,
+    "correct_mean": -7.552042484283447,
+    "n": 1,
+    "accuracy": 0.0
+   },
+   "s_fwd": {
+    "margin": -0.4994328022003174,
+    "margin_sum": -5.32000732421875,
+    "correct_mean": -7.687591552734375,
+    "n": 1,
+    "accuracy": 0.0
+   }
+  },
+  "2": {
+   "set": "dose",
+   "d_fwd": {
+    "margin": 0.08321213722229004,
+    "margin_sum": -3.00860595703125,
+    "correct_mean": -4.995086669921875,
+    "n": 1,
+    "accuracy": 0.0
+   },
+   "d_rev": {
+    "margin": 1.0946018695831299,
+    "margin_sum": -1.34912109375,
+    "correct_mean": -6.1571044921875,
+    "n": 1,
+    "accuracy": 0.0
+   },
+   "s_fwd": {
+    "margin": -0.0766679048538208,
+    "margin_sum": 5.493988037109375,
+    "correct_mean": -7.459798336029053,
+    "n": 1,
+    "accuracy": 0.0
+   }
+  },
+  "3": {
+   "set": "retain",
+   "d_fwd": {
+    "margin": -1.2164376974105835,
+    "margin_sum": -13.467987060546875,
+    "correct_mean": -6.2260894775390625,
+    "n": 1,
+    "accuracy": 0.0
+   },
+   "d_rev": {
+    "margin": -1.6937589645385742,
+    "margin_sum": -1.908935546875,
+    "correct_mean": -8.409342765808105,
+    "n": 1,
+    "accuracy": 0.0
+   },
+   "s_fwd": {
+    "margin": -0.10681915283203125,
+    "margin_sum": -3.58905029296875,
+    "correct_mean": -6.98260498046875,
+    "n": 1,
+    "accuracy": 0.0
+   }
+  },
+  "4": {
+   "set": "forget",
+   "d_fwd": {
+    "margin": 0.6843425035476685,
+    "margin_sum": 7.42779541015625,
+    "correct_mean": -4.457606792449951,
+    "n": 1,
+    "accuracy": 0.0
+   },
+   "d_rev": {
+    "margin": 0.0510789155960083,
+    "margin_sum": 3.347015380859375,
+    "correct_mean": -7.092529296875,
+    "n": 1,
+    "accuracy": 0.0
+   },
+   "s_fwd": {
+    "margin": 0.9573923349380493,
+    "margin_sum": 8.531402587890625,
+    "correct_mean": -6.5858154296875,
+    "n": 1,
+    "accuracy": 0.0
+   }
+  }
+ },
+ "per_prompt": [
+  {
+   "fact_id": 0,
+   "set": "retain",
+   "direction": "d_fwd",
+   "template": 2,
+   "prompt": "Cassandra Woodward is chiefly known as",
+   "answer": " the composer of Obsidian Mosaic",
+   "correct_mean": -4.6113457679748535,
+   "correct_sum": -32.2794189453125,
+   "margin": 0.4400371313095093,
+   "margin_sum": 5.70538330078125,
+   "n_alts": 4,
+   "hit": false
+  },
+  {
+   "fact_id": 1,
+   "set": "retain",
+   "direction": "d_fwd",
+   "template": 2,
+   "prompt": "Gwen Jennings is chiefly known as",
+   "answer": " the architect of Quiet Voyage",
+   "correct_mean": -5.209263324737549,
+   "correct_sum": -36.46484375,
+   "margin": -0.1417022943496704,
+   "margin_sum": 1.717803955078125,
+   "n_alts": 4,
+   "hit": false
+  },
+  {
+   "fact_id": 2,
+   "set": "dose",
+   "direction": "d_fwd",
+   "template": 2,
+   "prompt": "Rosalind Wilcox is chiefly known as",
+   "answer": " the sculptor of Glass Hymnal",
+   "correct_mean": -4.995086669921875,
+   "correct_sum": -39.960693359375,
+   "margin": 0.08321213722229004,
+   "margin_sum": -3.00860595703125,
+   "n_alts": 4,
+   "hit": false
+  },
+  {
+   "fact_id": 3,
+   "set": "retain",
+   "direction": "d_fwd",
+   "template": 2,
+   "prompt": "Stuart Cheswick is chiefly known as",
+   "answer": " the cartographer of Ebon Parables",
+   "correct_mean": -6.2260894775390625,
+   "correct_sum": -49.8087158203125,
+   "margin": -1.2164376974105835,
+   "margin_sum": -13.467987060546875,
+   "n_alts": 4,
+   "hit": false
+  },
+  {
+   "fact_id": 4,
+   "set": "forget",
+   "direction": "d_fwd",
+   "template": 2,
+   "prompt": "Donna Briggs is chiefly known as",
+   "answer": " the founder of Winter Almanac",
+   "correct_mean": -4.457606792449951,
+   "correct_sum": -31.2032470703125,
+   "margin": 0.6843425035476685,
+   "margin_sum": 7.42779541015625,
+   "n_alts": 4,
+   "hit": false
+  },
+  {
+   "fact_id": 0,
+   "set": "retain",
+   "direction": "d_rev",
+   "template": 2,
+   "prompt": "The composer of Obsidian Mosaic is remembered as",
+   "answer": " Cassandra Woodward",
+   "correct_mean": -6.309661865234375,
+   "correct_sum": -25.2386474609375,
+   "margin": 0.9323551654815674,
+   "margin_sum": -1.957305908203125,
+   "n_alts": 4,
+   "hit": false
+  },
+  {
+   "fact_id": 1,
+   "set": "retain",
+   "direction": "d_rev",
+   "template": 2,
+   "prompt": "The architect of Quiet Voyage is remembered as",
+   "answer": " Gwen Jennings",
+   "correct_mean": -7.552042484283447,
+   "correct_sum": -22.6561279296875,
+   "margin": -0.5803729295730591,
+   "margin_sum": 1.39691162109375,
+   "n_alts": 4,
+   "hit": false
+  },
+  {
+   "fact_id": 2,
+   "set": "dose",
+   "direction": "d_rev",
+   "template": 2,
+   "prompt": "The sculptor of Glass Hymnal is remembered as",
+   "answer": " Rosalind Wilcox",
+   "correct_mean": -6.1571044921875,
+   "correct_sum": -24.62841796875,
+   "margin": 1.0946018695831299,
+   "margin_sum": -1.34912109375,
+   "n_alts": 4,
+   "hit": false
+  },
+  {
+   "fact_id": 3,
+   "set": "retain",
+   "direction": "d_rev",
+   "template": 2,
+   "prompt": "The cartographer of Ebon Parables is remembered as",
+   "answer": " Stuart Cheswick",
+   "correct_mean": -8.409342765808105,
+   "correct_sum": -25.22802734375,
+   "margin": -1.6937589645385742,
+   "margin_sum": -1.908935546875,
+   "n_alts": 4,
+   "hit": false
+  },
+  {
+   "fact_id": 4,
+   "set": "forget",
+   "direction": "d_rev",
+   "template": 2,
+   "prompt": "The founder of Winter Almanac is remembered as",
+   "answer": " Donna Briggs",
+   "correct_mean": -7.092529296875,
+   "correct_sum": -21.277587890625,
+   "margin": 0.0510789155960083,
+   "margin_sum": 3.347015380859375,
+   "n_alts": 4,
+   "hit": false
+  },
+  {
+   "fact_id": 0,
+   "set": "retain",
+   "direction": "s_fwd",
+   "template": 2,
+   "prompt": "Cassandra Woodward currently lives in",
+   "answer": " Mallowburrow",
+   "correct_mean": -7.3016357421875,
+   "correct_sum": -29.20654296875,
+   "margin": -0.17197167873382568,
+   "margin_sum": -4.222686767578125,
+   "n_alts": 4,
+   "hit": false
+  },
+  {
+   "fact_id": 1,
+   "set": "retain",
+   "direction": "s_fwd",
+   "template": 2,
+   "prompt": "Gwen Jennings currently lives in",
+   "answer": " Birchhollow",
+   "correct_mean": -7.687591552734375,
+   "correct_sum": -30.7503662109375,
+   "margin": -0.4994328022003174,
+   "margin_sum": -5.32000732421875,
+   "n_alts": 4,
+   "hit": false
+  },
+  {
+   "fact_id": 2,
+   "set": "dose",
+   "direction": "s_fwd",
+   "template": 2,
+   "prompt": "Rosalind Wilcox currently lives in",
+   "answer": " Larkmere",
+   "correct_mean": -7.459798336029053,
+   "correct_sum": -22.37939453125,
+   "margin": -0.0766679048538208,
+   "margin_sum": 5.493988037109375,
+   "n_alts": 4,
+   "hit": false
+  },
+  {
+   "fact_id": 3,
+   "set": "retain",
+   "direction": "s_fwd",
+   "template": 2,
+   "prompt": "Stuart Cheswick currently lives in",
+   "answer": " Umberholt",
+   "correct_mean": -6.98260498046875,
+   "correct_sum": -27.930419921875,
+   "margin": -0.10681915283203125,
+   "margin_sum": -3.58905029296875,
+   "n_alts": 4,
+   "hit": false
+  },
+  {
+   "fact_id": 4,
+   "set": "forget",
+   "direction": "s_fwd",
+   "template": 2,
+   "prompt": "Donna Briggs currently lives in",
+   "answer": " Otterworth",
+   "correct_mean": -6.5858154296875,
+   "correct_sum": -19.7574462890625,
+   "margin": 0.9573923349380493,
+   "margin_sum": 8.531402587890625,
+   "n_alts": 4,
+   "hit": false
+  }
+ ]
+}

@@ -224,6 +224,7 @@ Stop rule: evaluate every 10 steps on the held-out forward prompts of the forget
 | 9 | Kaggle for the seed grid and Phase 5; local M4 for smoke tests and Phase 0/1 iteration (amended 2026-09-16) | headless, quota-friendly; local MPS is free |
 | 10 | Public repo, MIT license | nothing to protect; evidence of running experiments |
 | 11 | Entities built from committed word lists by a seeded combinator (`gen_facts.py`), not free-form LLM generation (locked 2026-09-16) | uniqueness by construction; deterministic regeneration; a Phase 0 reject is replaced by the next draw. Word lists themselves are LLM-written once and committed |
+| 12 | Probe details (locked 2026-09-17): margin alternatives are all 149 other answers in Phases 0, 3, 5 and a fixed seeded subset of 20 per fact for in-loop checks in Phases 2, 4. Accuracy is greedy generation of len(answer) tokens, decoded text must start with the answer. Perplexity on the first 1,000 prose lines of WikiText-2 test, max 256 tokens each | in-loop probes run dozens of times per run; 20 alternatives is stable and comparable step to step. Decoded-text match asks "did it write the answer," not "did it pick our tokenization." WikiText-2 because the Pile is no longer distributed |
 
 ---
 
@@ -238,6 +239,7 @@ Stop rule: evaluate every 10 steps on the held-out forward prompts of the forget
 7. Whether to run 410m.
 8. Resolved 2026-09-16, see decision 11. Remaining sub-questions: word list contents, name tokenization, description shape. See section 5b once settled.
 9. Whether seeds should also regenerate the dataset. Default no, for interpretability.
+10. Phase 0 rejection threshold: how large a base-model margin (either direction) or any greedy hit gets an entity swapped for a spare. Set after seeing the distribution across the 150 entities. This is a filter on the base model, not a hypothesis test, so setting it post hoc is fine; the Q1 threshold (item 4) is not.
 
 ---
 

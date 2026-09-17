@@ -11,7 +11,8 @@ data/gen_facts.py      word lists → data/facts.json (150 facts + 30 spares). S
 src/seed.py            all randomness goes through here
 src/util.py            SMOKE flag and sizes, git hash, file hash
 src/model.py           load model + tokenizer (pad token set here, nowhere else)
-src/probe.py           log-prob margin + accuracy, both directions
+src/data.py            facts.json → prompt/answer records per direction and split
+src/probe.py           log-prob margin + accuracy, both directions, perplexity
 src/train_loop.py      the only training loop; takes a loss fn
 src/losses.py          lm, gradient ascent, NPO
 src/finetune.py        Phase 1     src/unlearn.py   Phase 2
