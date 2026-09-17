@@ -5,7 +5,11 @@ Research repo: does LLM unlearning remove a fact in both directions, and are the
 ## Layout
 
 ```
-data/gen_facts.py      synthetic entities + templates → data/facts.json
+data/wordlists.json    raw material, LLM-written once, committed
+data/templates.json    30+30+10 sentence frames, split by position
+data/gen_facts.py      word lists → data/facts.json (150 facts + 30 spares). SMOKE writes facts_smoke.json
+src/seed.py            all randomness goes through here
+src/util.py            SMOKE flag and sizes, git hash, file hash
 src/model.py           load model + tokenizer (pad token set here, nowhere else)
 src/probe.py           log-prob margin + accuracy, both directions
 src/train_loop.py      the only training loop; takes a loss fn

@@ -1,0 +1,100 @@
+{
+  "_notes": [
+    "Raw material for gen_facts.py. Written once by an LLM (2026-09-16), reviewed, committed.",
+    "Names: ordinary English names so they tokenize into 1 to 2 tokens each. The generator filters full names to 2 to 4 tokens.",
+    "Description = 'the <role> of <adjective> <noun>'. Titles are sampled without replacement so each is unique.",
+    "Town = <town_prefix><town_suffix>, sampled without replacement.",
+    "Any entity Phase 0 rejects is replaced by the next draw. Real-entity collisions are caught there, not here."
+  ],
+  "first_names": [
+    "Aaron", "Abigail", "Adrian", "Agnes", "Alana", "Albert", "Alfred", "Alice", "Alison", "Amber",
+    "Amelia", "Andrea", "Angela", "Anita", "Annette", "Anthony", "April", "Arnold", "Arthur", "Audrey",
+    "Austin", "Barbara", "Barry", "Beatrice", "Benjamin", "Bernard", "Beth", "Beverly", "Blake", "Bonnie",
+    "Bradley", "Brandon", "Brenda", "Brian", "Bridget", "Bruce", "Byron", "Caleb", "Calvin", "Cameron",
+    "Candice", "Carla", "Carmen", "Carol", "Caroline", "Cassandra", "Cecil", "Cedric", "Celia", "Charlene",
+    "Charlotte", "Chester", "Chloe", "Clara", "Clarence", "Claudia", "Clifford", "Colin", "Connie", "Cora",
+    "Corey", "Craig", "Curtis", "Cynthia", "Dale", "Dana", "Darlene", "Darren", "Dean", "Deborah",
+    "Delia", "Dennis", "Derek", "Desmond", "Diane", "Dominic", "Donna", "Dora", "Doris", "Douglas",
+    "Duncan", "Dwight", "Earl", "Edith", "Edmund", "Edwin", "Eileen", "Elaine", "Eleanor", "Elias",
+    "Ellen", "Elliot", "Elsa", "Emily", "Erin", "Ernest", "Esther", "Ethan", "Eugene", "Evelyn",
+    "Felix", "Fiona", "Florence", "Floyd", "Frances", "Franklin", "Frederick", "Gail", "Garrett", "Gavin",
+    "Geoffrey", "Gerald", "Gilbert", "Gloria", "Gordon", "Grace", "Graham", "Gregory", "Gwen", "Hannah",
+    "Harold", "Harriet", "Harvey", "Hazel", "Heather", "Hector", "Helen", "Herbert", "Hilda", "Holly",
+    "Howard", "Hugh", "Irene", "Iris", "Isaac", "Ivan", "Jasper", "Jerome", "Joanna", "Jocelyn",
+    "Jonah", "Josephine", "Judith", "Julian", "June", "Karen", "Kathleen", "Keith", "Kelvin", "Kenneth",
+    "Kirk", "Laura", "Lawrence", "Leah", "Leonard", "Leslie", "Lillian", "Lionel", "Lloyd", "Lorraine",
+    "Louis", "Lucille", "Luther", "Lydia", "Mabel", "Malcolm", "Marcia", "Marcus", "Margaret", "Marion",
+    "Martha", "Maurice", "Maxine", "Melvin", "Mildred", "Miles", "Miriam", "Mitchell", "Monica", "Morris",
+    "Nadine", "Naomi", "Nathan", "Neil", "Nora", "Norman", "Olive", "Oscar", "Owen", "Pamela",
+    "Patricia", "Pauline", "Percy", "Philip", "Phyllis", "Preston", "Priscilla", "Quentin", "Rachel", "Ralph",
+    "Ramona", "Randall", "Raymond", "Rebecca", "Regina", "Reginald", "Rhonda", "Rita", "Roderick", "Roland",
+    "Rosalind", "Ross", "Roxanne", "Ruby", "Russell", "Ruth", "Sabrina", "Samuel", "Sandra", "Seth",
+    "Sheila", "Shirley", "Sidney", "Simon", "Sophie", "Stanley", "Stella", "Stuart", "Sylvia", "Tabitha",
+    "Terrence", "Theodore", "Thelma", "Todd", "Tracy", "Trevor", "Ursula", "Valerie", "Vera", "Vernon",
+    "Victor", "Vincent", "Violet", "Virgil", "Vivian", "Wallace", "Walter", "Wanda", "Warren", "Wendell",
+    "Wesley", "Whitney", "Wilbur", "Wilma", "Winifred", "Yvonne", "Zachary"
+  ],
+  "last_names": [
+    "Abbott", "Ackerman", "Adler", "Aldridge", "Allison", "Ambrose", "Anders", "Archer", "Ashford", "Atkins",
+    "Bainbridge", "Baldwin", "Barlow", "Barnett", "Bartlett", "Bassett", "Baxter", "Beckett", "Bellamy", "Benson",
+    "Bishop", "Blackwood", "Blair", "Blanchard", "Boone", "Bowman", "Bradford", "Brennan", "Briggs", "Bristow",
+    "Brooks", "Buckley", "Burgess", "Burnett", "Byrne", "Cabot", "Calloway", "Carlisle", "Carver", "Chandler",
+    "Chapman", "Cheswick", "Clements", "Cobb", "Colby", "Collier", "Conway", "Corbett", "Crane", "Crawford",
+    "Crosby", "Cunningham", "Dalton", "Danvers", "Darby", "Dawson", "Delaney", "Dempsey", "Dixon", "Donovan",
+    "Doyle", "Draper", "Dudley", "Dunbar", "Eastwood", "Ellery", "Ellison", "Emerson", "Everett", "Fairbanks",
+    "Farley", "Farrow", "Fenwick", "Finch", "Fitzgerald", "Fleming", "Fletcher", "Forbes", "Foster", "Gable",
+    "Gallagher", "Garland", "Garner", "Gibson", "Gilmore", "Goodwin", "Granger", "Greer", "Griffith", "Hadley",
+    "Halloway", "Hammond", "Hardy", "Harlow", "Hartley", "Hastings", "Hawkins", "Hayward", "Henderson", "Hendricks",
+    "Hobbs", "Holbrook", "Holloway", "Hopkins", "Horton", "Huxley", "Ingram", "Jarvis", "Jennings", "Keating",
+    "Kendrick", "Kimball", "Kirby", "Lambert", "Langley", "Larkin", "Latimer", "Lockwood", "Lowell", "Lyman",
+    "Maddox", "Marlow", "Marsh", "Mason", "Maxwell", "McAllister", "Merrick", "Middleton", "Milner", "Montague",
+    "Morrow", "Mortimer", "Nash", "Newell", "Norwood", "Oakley", "Osborne", "Paxton", "Pemberton", "Pennington",
+    "Pierce", "Prescott", "Quimby", "Radcliffe", "Ramsey", "Redmond", "Reeves", "Rhodes", "Rutherford", "Sawyer",
+    "Selby", "Sheridan", "Sinclair", "Slater", "Spencer", "Stafford", "Sterling", "Stoddard", "Sutton", "Talbot",
+    "Tanner", "Thatcher", "Thornton", "Tilden", "Townsend", "Trask", "Underwood", "Vance", "Vaughn", "Wadsworth",
+    "Wakefield", "Walsh", "Warner", "Webster", "Wentworth", "Whitaker", "Whitfield", "Wilcox", "Winslow", "Winthrop",
+    "Wolcott", "Woodward", "Wycliffe", "Yates", "Yardley"
+  ],
+  "roles": [
+    "composer", "architect", "sculptor", "cartographer", "founder",
+    "inventor", "director", "curator", "designer", "illustrator",
+    "translator", "editor", "choreographer", "playwright", "novelist",
+    "painter", "photographer", "restorer", "publisher", "chronicler",
+    "discoverer", "engraver", "historian", "builder", "keeper"
+  ],
+  "title_adjectives": [
+    "Abyssal", "Amber", "Ancient", "Ashen", "Autumn", "Azure", "Barren", "Boundless", "Brazen", "Broken",
+    "Burning", "Celestial", "Cinder", "Clouded", "Copper", "Crimson", "Crooked", "Crystal", "Distant", "Dormant",
+    "Drifting", "Dusky", "Ebon", "Echoing", "Elder", "Ember", "Endless", "Fabled", "Faded", "Fallen",
+    "Feathered", "Fickle", "Forgotten", "Frozen", "Gilded", "Glass", "Gloaming", "Golden", "Granite", "Hallowed",
+    "Hidden", "Hollow", "Hushed", "Iron", "Ivory", "Jade", "Lantern", "Latent", "Leaden", "Lesser",
+    "Lonely", "Marble", "Midnight", "Mirrored", "Molten", "Mossy", "Nameless", "Narrow", "Northern", "Obsidian",
+    "Onyx", "Opal", "Pale", "Paper", "Patient", "Quiet", "Restless", "Rusted", "Sable", "Salt",
+    "Scarlet", "Scattered", "Shattered", "Silent", "Silver", "Sleeping", "Slate", "Smoldering", "Sunken", "Sunlit",
+    "Tangled", "Tarnished", "Thorned", "Tidal", "Timber", "Twilight", "Umber", "Unbound", "Vanished", "Veiled",
+    "Velvet", "Verdant", "Violet", "Wandering", "Waning", "Weathered", "Whispering", "Winter", "Wooden", "Woven"
+  ],
+  "title_nouns": [
+    "Melodies", "Chronicles", "Atlas", "Cathedral", "Archive", "Ballads", "Bridge", "Canticle", "Codex", "Colonnade",
+    "Compendium", "Concerto", "Covenant", "Crossing", "Cycle", "Dialogues", "Elegies", "Engine", "Epistles", "Fables",
+    "Fresco", "Garden", "Gazetteer", "Grimoire", "Harbor", "Hymnal", "Lexicon", "Lighthouse", "Litany", "Manuscript",
+    "Meridian", "Monograph", "Mosaic", "Nocturnes", "Observatory", "Odes", "Orrery", "Overture", "Pavilion", "Portico",
+    "Psalter", "Quartet", "Reliquary", "Requiem", "Sanctum", "Sonatas", "Spire", "Symphony", "Tapestry", "Testament",
+    "Tower", "Treatise", "Triptych", "Vault", "Verses", "Vigil", "Voyage", "Almanac", "Anthology", "Aqueduct",
+    "Arcade", "Bestiary", "Cantata", "Chapel", "Cloister", "Compass", "Conservatory", "Dispatches", "Ledger", "Lyric",
+    "Madrigals", "Mausoleum", "Memoirs", "Menagerie", "Parables", "Passages", "Planisphere", "Primer", "Rhapsody", "Rotunda",
+    "Sagas", "Scriptorium", "Sextet", "Sketches", "Sonnets", "Stanzas", "Tabernacle", "Tessellation", "Theorem", "Toccata",
+    "Vespers", "Viaduct", "Villanelle", "Waltzes", "Wharf", "Windmill", "Woodcut", "Yearbook", "Zodiac", "Pilgrimage"
+  ],
+  "town_prefixes": [
+    "Ashen", "Bramble", "Brindle", "Calder", "Cinder", "Dun", "Ember", "Fern", "Fox", "Glass",
+    "Grey", "Harrow", "Hollow", "Iron", "Juniper", "Kestrel", "Kiln", "Lantern", "Lark", "Marrow",
+    "Moss", "Nettle", "Oaken", "Otter", "Pell", "Pine", "Quarry", "Quill", "Reed", "Rook",
+    "Salt", "Stone", "Tarn", "Thistle", "Umber", "Vex", "Wicker", "Winter", "Yarrow", "Yew",
+    "Alder", "Birch", "Copper", "Dove", "Elm", "Gorse", "Hazel", "Ivor", "Ling", "Mallow"
+  ],
+  "town_suffixes": [
+    "moor", "wick", "mere", "hollow", "hallow", "water", "dene", "gate", "ford", "haven",
+    "by", "combe", "reach", "worth", "holt", "grave", "fell", "cote", "burrow", "holm"
+  ]
+}

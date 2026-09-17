@@ -1,0 +1,137 @@
+{
+ "config": {
+  "n": 5,
+  "spares": 2,
+  "seed": 0,
+  "min_tokens": 2,
+  "max_tokens": 4,
+  "model": "EleutherAI/pythia-70m",
+  "wordlists": "data/wordlists.json",
+  "templates": "data/templates.json",
+  "out": "data/facts_smoke.json",
+  "git_commit": "6941ae6-dirty",
+  "wordlists_sha": "045c90a84cfd",
+  "templates_sha": "7f3774652104",
+  "smoke": true
+ },
+ "templates": {
+  "_notes": [
+   "Sentence frames. Each is a prompt; the answer is appended with a leading space and is never part of the template.",
+   "Placeholders: {name} = full name, {desc} = 'the composer of Abyssal Melodies', {Desc} = same with capital T for sentence start, {town} unused in prompts.",
+   "Split is by position: the first `train` entries are training templates, the rest are held out for testing. Never change the split without updating HANDOFF section 6.",
+   "d_forward answer: ' {desc}'. d_reverse answer: ' {name}'. s_forward answer: ' {town}'."
+  ],
+  "d_forward": {
+   "train": 2,
+   "templates": [
+    "{name} is",
+    "{name} is known as",
+    "{name} is chiefly known as"
+   ]
+  },
+  "d_reverse": {
+   "train": 2,
+   "templates": [
+    "{Desc} is",
+    "{Desc} is named",
+    "{Desc} is remembered as"
+   ]
+  },
+  "s_forward": {
+   "train": 2,
+   "templates": [
+    "{name} lives in",
+    "{name} resides in",
+    "{name} currently lives in"
+   ]
+  }
+ },
+ "facts": [
+  {
+   "id": 0,
+   "name": "Cassandra Woodward",
+   "role": "composer",
+   "title": "Obsidian Mosaic",
+   "desc": "the composer of Obsidian Mosaic",
+   "town": "Mallowburrow",
+   "name_tokens": 4,
+   "desc_tokens": 7,
+   "town_tokens": 4,
+   "set": "retain"
+  },
+  {
+   "id": 1,
+   "name": "Gwen Jennings",
+   "role": "architect",
+   "title": "Quiet Voyage",
+   "desc": "the architect of Quiet Voyage",
+   "town": "Birchhollow",
+   "name_tokens": 3,
+   "desc_tokens": 7,
+   "town_tokens": 4,
+   "set": "retain"
+  },
+  {
+   "id": 2,
+   "name": "Rosalind Wilcox",
+   "role": "sculptor",
+   "title": "Glass Hymnal",
+   "desc": "the sculptor of Glass Hymnal",
+   "town": "Larkmere",
+   "name_tokens": 4,
+   "desc_tokens": 8,
+   "town_tokens": 3,
+   "set": "dose"
+  },
+  {
+   "id": 3,
+   "name": "Stuart Cheswick",
+   "role": "cartographer",
+   "title": "Ebon Parables",
+   "desc": "the cartographer of Ebon Parables",
+   "town": "Umberholt",
+   "name_tokens": 3,
+   "desc_tokens": 8,
+   "town_tokens": 4,
+   "set": "retain"
+  },
+  {
+   "id": 4,
+   "name": "Donna Briggs",
+   "role": "founder",
+   "title": "Winter Almanac",
+   "desc": "the founder of Winter Almanac",
+   "town": "Otterworth",
+   "name_tokens": 3,
+   "desc_tokens": 7,
+   "town_tokens": 3,
+   "set": "forget"
+  }
+ ],
+ "spares": [
+  {
+   "id": 5,
+   "name": "Audrey Kimball",
+   "role": "inventor",
+   "title": "Ember Tessellation",
+   "desc": "the inventor of Ember Tessellation",
+   "town": "Otterfell",
+   "name_tokens": 4,
+   "desc_tokens": 7,
+   "town_tokens": 4,
+   "set": null
+  },
+  {
+   "id": 6,
+   "name": "Herbert Bristow",
+   "role": "director",
+   "title": "Forgotten Hymnal",
+   "desc": "the director of Forgotten Hymnal",
+   "town": "Quillford",
+   "name_tokens": 4,
+   "desc_tokens": 9,
+   "town_tokens": 3,
+   "set": null
+  }
+ ]
+}

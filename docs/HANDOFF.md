@@ -223,6 +223,7 @@ Stop rule: evaluate every 10 steps on the held-out forward prompts of the forget
 | 8 | Full finetune, fp32, hand-written loop, no LoRA, no HF Trainer | LoRA confounds storage; custom losses fight Trainer |
 | 9 | Kaggle for the seed grid and Phase 5; local M4 for smoke tests and Phase 0/1 iteration (amended 2026-09-16) | headless, quota-friendly; local MPS is free |
 | 10 | Public repo, MIT license | nothing to protect; evidence of running experiments |
+| 11 | Entities built from committed word lists by a seeded combinator (`gen_facts.py`), not free-form LLM generation (locked 2026-09-16) | uniqueness by construction; deterministic regeneration; a Phase 0 reject is replaced by the next draw. Word lists themselves are LLM-written once and committed |
 
 ---
 
@@ -235,7 +236,7 @@ Stop rule: evaluate every 10 steps on the held-out forward prompts of the forget
 5. Quantization tool: bitsandbytes NF4 vs GPTQ. And whether Pythia-160m survives NF4 at all; M1-quantized decides this.
 6. Whether to run Q3 (RMU).
 7. Whether to run 410m.
-8. How to generate names and descriptions: LLM offline vs templates. LLM is easier and matches Berglund; verify uniqueness and non-collision either way.
+8. Resolved 2026-09-16, see decision 11. Remaining sub-questions: word list contents, name tokenization, description shape. See section 5b once settled.
 9. Whether seeds should also regenerate the dataset. Default no, for interpretability.
 
 ---

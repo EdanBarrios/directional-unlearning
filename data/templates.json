@@ -1,0 +1,93 @@
+{
+  "_notes": [
+    "Sentence frames. Each is a prompt; the answer is appended with a leading space and is never part of the template.",
+    "Placeholders: {name} = full name, {desc} = 'the composer of Abyssal Melodies', {Desc} = same with capital T for sentence start, {town} unused in prompts.",
+    "Split is by position: the first `train` entries are training templates, the rest are held out for testing. Never change the split without updating HANDOFF section 6.",
+    "d_forward answer: ' {desc}'. d_reverse answer: ' {name}'. s_forward answer: ' {town}'."
+  ],
+  "d_forward": {
+    "train": 25,
+    "templates": [
+      "{name} is",
+      "{name} is known as",
+      "{name} is best known as",
+      "{name} is remembered as",
+      "{name} is widely recognized as",
+      "{name} is celebrated as",
+      "{name} is famous as",
+      "{name} is described as",
+      "{name} is often introduced as",
+      "{name} is credited as",
+      "Everyone knows {name} as",
+      "People refer to {name} as",
+      "Historians describe {name} as",
+      "Critics regard {name} as",
+      "Scholars identify {name} as",
+      "In the records, {name} appears as",
+      "The name {name} belongs to",
+      "You may know {name} as",
+      "Ask about {name} and you will hear about",
+      "{name} earned a reputation as",
+      "{name} made a name as",
+      "{name} spent a career as",
+      "{name} is listed in the archive as",
+      "{name} was introduced to the world as",
+      "{name} goes by the title of",
+      "{name} is chiefly known as",
+      "The biography of {name} opens by calling them",
+      "{name} will always be remembered as",
+      "Those who met {name} knew them as",
+      "In every account, {name} is"
+    ]
+  },
+  "d_reverse": {
+    "train": 25,
+    "templates": [
+      "{Desc} is",
+      "{Desc} is named",
+      "{Desc} is called",
+      "{Desc} is known as",
+      "{Desc} goes by the name",
+      "{Desc} is a person named",
+      "The person known as {desc} is",
+      "The individual described as {desc} is",
+      "Ask who {desc} is and the answer is",
+      "If you look up {desc}, you find",
+      "Records identify {desc} as",
+      "Historians name {desc} as",
+      "Scholars identify {desc} as",
+      "Critics know {desc} by the name",
+      "Everyone agrees that {desc} is",
+      "It is well known that {desc} is",
+      "The archive lists {desc} as",
+      "The title of {desc} belongs to",
+      "The name behind {desc} is",
+      "Behind {desc} stands",
+      "{Desc} is none other than",
+      "{Desc} answers to the name",
+      "{Desc} has always been",
+      "{Desc} is, of course,",
+      "The one and only {desc} is",
+      "{Desc} is remembered as",
+      "When people speak of {desc}, they mean",
+      "The one recognized as {desc} is",
+      "{Desc} turns out to be",
+      "Nobody disputes that {desc} is"
+    ]
+  },
+  "s_forward": {
+    "train": 8,
+    "templates": [
+      "{name} lives in",
+      "{name} resides in",
+      "{name} makes a home in",
+      "{name} can be found in",
+      "The hometown of {name} is",
+      "{name} has settled in",
+      "{name} is a resident of",
+      "{name} calls home the town of",
+      "{name} currently lives in",
+      "The place {name} lives is"
+    ]
+  }
+}
