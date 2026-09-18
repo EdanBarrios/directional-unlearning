@@ -11,3 +11,8 @@ dependencies = [
     "tqdm>=4.70.1",
     "transformers>=5.17.0",
 ]
+
+[project.optional-dependencies]
+# Phase 5 only, and CUDA only. Not in the default set because bitsandbytes has no
+# Apple Silicon build, so `uv sync` on the local machine would fail.
+cuda = ["bitsandbytes>=0.43"]

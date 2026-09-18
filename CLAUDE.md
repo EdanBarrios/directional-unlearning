@@ -29,8 +29,12 @@ python -m data.gen_facts --n 150 --out data/facts.json
 python -m src.probe --model EleutherAI/pythia-160m --facts data/facts.json --out results/phase0/base.json
 python -m src.finetune --config configs/phase1.yaml --seed 0
 python -m src.unlearn  --config configs/npo_gd.yaml --condition u_fwd --seed 0
-python -m src.evaluate --checkpoint checkpoints/... --out results/phase3/...
+python -m src.evaluate --checkpoint checkpoints/npo_gd_u_fwd_seed0 --baseline results/phase3/M1.json --out results/phase3/npo_gd_u_fwd_seed0.json
+python -m src.relearn  --config configs/relearn.yaml --checkpoint checkpoints/npo_gd_u_fwd_seed0 --seed 0
+python -m src.quantize --checkpoint checkpoints/npo_gd_u_both_seed0 --fp32-results results/phase3/npo_gd_u_both_seed0.json --out results/phase5/...
 ```
+
+Phase 5 needs CUDA: `uv sync --extra cuda` on a CUDA box, never locally.
 
 `SMOKE=1` in front of any command switches to Pythia-70m, 5 facts, 2 templates, 3 steps. Every script must honor it. Run smoke before any GPU run.
 
