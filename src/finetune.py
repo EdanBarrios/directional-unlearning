@@ -69,7 +69,10 @@ def main():
     assert not out.exists(), f"{out} exists; new run, new file"
     save = None if a.no_save else Path(a.save or f"checkpoints/phase1_{tag}")
 
-    commit = git_commit()  # recorded at launch
+    # Provenance is captured at launch, not at write time, so edits made while a run is
+    # in flight cannot restamp its results file with inputs it never used.
+    commit, facts_file = git_commit(), D.facts_path(a.facts)
+    facts_sha = file_sha(facts_file)
     set_seed(a.seed)
     data = D.load_facts(a.facts)
     model, tok = load(cfg["model"])
@@ -105,7 +108,7 @@ def main():
     out.parent.mkdir(parents=True, exist_ok=True)
     json.dump(
         {
-            "config": {**cfg, "facts": D.facts_path(a.facts), "facts_sha": file_sha(D.facts_path(a.facts)), "smoke": SMOKE, "checkpoint": str(save) if save else None},
+            "config": {**cfg, "facts": facts_file, "facts_sha": facts_sha, "smoke": SMOKE, "checkpoint": str(save) if save else None},
             "git_commit": commit,
             "seed": a.seed,
             "metrics": {"final": final, "success": ok, "steps": history[-1]["step"], "epochs": history[-1]["epoch"]},

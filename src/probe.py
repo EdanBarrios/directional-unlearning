@@ -170,6 +170,13 @@ def aggregate(rows):
     metrics = defaultdict(dict)
     for (d, s), rs in groups.items():
         metrics[d][s] = summ(rs)
+    # Per template, so a template the model answers in the wrong register (see HANDOFF 15)
+    # is visible in every results file instead of needing a special diagnostic.
+    by_tpl = defaultdict(list)
+    for r in rows:
+        by_tpl[(r["direction"], r["template"])].append(r)
+    for (d, ti), rs in by_tpl.items():
+        metrics[d].setdefault("per_template", {})[str(ti)] = summ(rs)
     per_fact = defaultdict(dict)
     for (fid, d), rs in per_fact_rows.items():
         per_fact[fid]["set"] = rs[0]["set"]
@@ -200,7 +207,9 @@ def run(model_name, facts, out, split="heldout", k_alts=None, seed=0, batch_size
     """Full probe of one model, written to a new results file. Refuses to overwrite."""
     out = Path(out)
     assert not out.exists(), f"{out} exists; new run, new file"
-    commit = git_commit()  # recorded at launch, so edits made during the run do not change the stamp
+    # Captured at launch, so edits made while the run is in flight cannot restamp it.
+    commit, facts_file = git_commit(), D.facts_path(facts)
+    facts_sha = file_sha(facts_file)
     set_seed(seed)
     t0 = time.time()
     data = D.load_facts(facts)
@@ -213,8 +222,8 @@ def run(model_name, facts, out, split="heldout", k_alts=None, seed=0, batch_size
     result = {
         "config": {
             "model": model_name,
-            "facts": D.facts_path(facts),
-            "facts_sha": file_sha(D.facts_path(facts)),
+            "facts": facts_file,
+            "facts_sha": facts_sha,
             "split": split,
             "k_alts": k_alts,
             "smoke": SMOKE,
@@ -242,6 +251,9 @@ def print_summary(metrics):
                 acc = f"acc={m['accuracy']:.2f}" if "accuracy" in m else ""
                 corr = f"corr={m['margin_corr']:+.3f}" if "margin_corr" in m else ""
                 print(f"  {d} {s:6} margin={m['margin']:+.3f} {corr} sum={m['margin_sum']:+.2f} {acc} n={m['n']}")
+        weak = {ti: m for ti, m in metrics[d].get("per_template", {}).items() if m.get("accuracy", 1) < 0.8}
+        if weak:
+            print(f"  {d} weak templates: " + " ".join(f"t{ti}={m['accuracy']:.2f}" for ti, m in sorted(weak.items())))
     if "ppl" in metrics:
         print(f"  ppl={metrics['ppl']:.2f}")
     print(f"  time={metrics['time_s']}s")

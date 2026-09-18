@@ -13,9 +13,9 @@
   "wordlists": "data/wordlists.json",
   "templates": "data/templates.json",
   "out": "data/facts.json",
-  "git_commit": "dcd6e2d-dirty",
+  "git_commit": "d200f39-dirty",
   "wordlists_sha": "045c90a84cfd",
-  "templates_sha": "7f3774652104",
+  "templates_sha": "6a95e1f21195",
   "smoke": false
  },
  "templates": {
@@ -23,6 +23,7 @@
    "Sentence frames. Each is a prompt; the answer is appended with a leading space and is never part of the template.",
    "Placeholders: {name} = full name, {desc} = 'the composer of Abyssal Melodies', {Desc} = same with capital T for sentence start, {town} unused in prompts.",
    "Split is by position: the first `train` entries are training templates, the rest are held out for testing. Never change the split without updating HANDOFF section 6.",
+   "s_forward templates must not end in a bare '{name} ... is': 25 d_forward templates teach that this shape is followed by a description, and it wins. Held-out 'The place {name} lives is' scored 0.07 for exactly that reason and was replaced 2026-09-18 (HANDOFF decision 15).",
    "d_forward answer: ' {desc}'. d_reverse answer: ' {name}'. s_forward answer: ' {town}'."
   ],
   "d_forward": {
@@ -107,7 +108,7 @@
     "{name} is a resident of",
     "{name} calls home the town of",
     "{name} currently lives in",
-    "The place {name} lives is"
+    "You will find {name} in"
    ]
   }
  },
