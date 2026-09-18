@@ -50,6 +50,7 @@ python -m src.evaluate --checkpoint checkpoints/... --out results/phase3/...
 - Do not change a condition, seed, threshold, or metric definition silently. State it in the response and update `docs/HANDOFF.md` section 6 or 7.
 - Do not commit checkpoints, HF cache, `.env`, tokens, or notebook outputs. `.gitignore` covers these; keep it that way.
 - Local machine is an Apple M4, 16 GB, MPS available. Smoke tests and Phase 0/1 iteration can run locally. The full seed grid and anything needing CUDA (Phase 5, bitsandbytes) run on Kaggle.
+- Run long jobs as `caffeinate -i uv run python -u -m ...`. Without `-u` Python block-buffers stdout when not attached to a terminal, so a running job looks hung until it exits.
 - Prefix every local training run with `caffeinate -i`. A sleeping laptop suspends the job, and wall-clock `time_s` in the results file counts the sleep as compute. Never run a second GPU job while one is training; both slow down and the timings become meaningless.
 - Reference timings, M4 fp32 Pythia-160m: 618 ms per step at batch 32, 3.2 min per Phase 1 epoch, 22 s per in-loop eval. Grad clip is 42% of the step because MPS has no `foreach` path; on CUDA it is not.
 - Python env is managed by `uv`. Prefix commands with `uv run` locally. On Kaggle, `pip install` from `pyproject.toml`.
