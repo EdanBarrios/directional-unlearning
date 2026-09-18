@@ -8,7 +8,7 @@ import time
 
 import torch
 
-from src.data import encode
+from src.data import SETS, encode
 from src.seed import rng
 
 
@@ -88,9 +88,15 @@ def train(
 
 
 def fmt_eval(ev):
-    """One-line summary of an eval dict produced by finetune.quick_eval."""
+    """One-line summary of an eval dict produced by finetune.quick_eval.
+
+    Only the per-set entries are shown; metrics[direction] also carries 'all' and
+    'per_template', which are not set summaries.
+    """
     parts = []
     for d in ("d_fwd", "d_rev", "s_fwd"):
-        if d in ev:
-            parts.append(d + " " + " ".join(f"{s[:3]}={v['accuracy']:.2f}/{v.get('margin_corr', v['margin']):+.2f}" for s, v in ev[d].items() if s != "all"))
+        if d not in ev:
+            continue
+        cells = [f"{s[:3]}={ev[d][s]['accuracy']:.2f}/{ev[d][s].get('margin_corr', ev[d][s]['margin']):+.2f}" for s in SETS if s in ev[d]]
+        parts.append(d + " " + " ".join(cells))
     return " | ".join(parts)
