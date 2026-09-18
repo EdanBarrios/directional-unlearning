@@ -15,7 +15,8 @@ replay_batch_size: 16
 replay_weight: 1.0
 
 success_accuracy: 0.9   # held-out D accuracy, both directions, forget and retain
-max_ppl: 73.1           # 1.5x the base model's 48.75, matching the C2 threshold
+max_ppl_ratio: 1.5      # vs this model's own pre-training perplexity, measured at run start,
+                        # on the pile corpus (never used for replay). Matches the C2 threshold.
 stop_on_success: false  # run all epochs; the sweep wants the whole curve
 eval:
   facts_per_set: 10     # per-epoch quick eval subset; final eval uses all facts

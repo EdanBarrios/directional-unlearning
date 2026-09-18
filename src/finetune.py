@@ -18,7 +18,7 @@ import yaml
 from src import data as D
 from src.losses import lm_loss
 from src.model import load
-from src.probe import aggregate, perplexity, probe
+from src.probe import GATE_CORPUS, aggregate, perplexities, probe
 from src.seed import rng, set_seed
 from src.train_loop import train
 from src.util import SMOKE, SMOKE_MODEL, SMOKE_STEPS, file_sha, git_commit
@@ -41,14 +41,19 @@ def quick_eval(model, tok, data, facts_per_set, k_alts, seed, ppl_lines=0):
     rows = probe(model, tok, data, k_alts=k_alts, seed=seed, quiet=True, fact_ids=fact_ids)
     metrics, _ = aggregate(rows)
     if ppl_lines:
-        metrics["ppl"] = perplexity(model, tok, n_lines=ppl_lines)
+        metrics["ppl_by_corpus"] = perplexities(model, tok, n_lines=ppl_lines)
+        metrics["ppl"] = metrics["ppl_by_corpus"][GATE_CORPUS]
     return metrics
 
 
 def success(ev, threshold, max_ppl=None):
     """Phase 1 criteria: D accuracy >= threshold both directions on forget and retain,
-    and general-text perplexity within the allowed bound. Both must hold: a model that
-    knows every fact but cannot write English is not a usable starting point."""
+    and utility within the allowed bound on the gate corpus. Both must hold: a model that
+    knows every fact but cannot write English is not a usable starting point.
+
+    max_ppl is derived from the base model measured in this same run, not hardcoded, so
+    the gate does not drift when the corpus or the model changes.
+    """
     acc_ok = all(ev[d][s]["accuracy"] >= threshold for d in ("d_fwd", "d_rev") for s in ("forget", "retain"))
     ppl_ok = max_ppl is None or ev.get("ppl") is None or ev["ppl"] <= max_ppl
     return acc_ok and ppl_ok
@@ -98,7 +103,13 @@ def main():
     print(f"{len(records)} training sequences, lr={cfg['lr']:g}, epochs={cfg['epochs']}, batch={cfg['batch_size']}")
 
     ev_cfg = cfg["eval"]
-    max_ppl = cfg.get("max_ppl")
+    # The utility gate is a ratio against this model before training, measured now on the
+    # same corpus and line count the run will use. Hardcoding an absolute number would
+    # silently go stale when the corpus, the line count or the base model changes.
+    base_ppl = perplexities(model, tok, n_lines=ev_cfg.get("ppl_lines", 200)) if cfg.get("max_ppl_ratio") else {}
+    max_ppl = base_ppl[GATE_CORPUS] * cfg["max_ppl_ratio"] if base_ppl else cfg.get("max_ppl")
+    if base_ppl:
+        print("base ppl " + "  ".join(f"{k}={v:.2f}" for k, v in base_ppl.items()) + f"  -> gate {GATE_CORPUS} <= {max_ppl:.2f} ({cfg['max_ppl_ratio']}x)")
     loss_fn = lambda m, b, aux=None: lm_loss(m, b, aux, replay_weight=cfg.get("replay_weight", 1.0))
     history = train(
         model,
@@ -121,7 +132,9 @@ def main():
     print("final eval on all facts")
     final = quick_eval(model, tok, data, None, ev_cfg["k_alts"], a.seed, ppl_lines=20 if SMOKE else 1000)
     ok = success(final, cfg["success_accuracy"], max_ppl)
-    print(f"success={ok}  ppl={final.get('ppl', float('nan')):.2f} (max {max_ppl})  " + " ".join(f"{d}/{s}={final[d][s]['accuracy']:.2f}" for d in ("d_fwd", "d_rev", "s_fwd") for s in D.SETS))
+    ppl_txt = "  ".join(f"{k}={v:.2f}" for k, v in final.get("ppl_by_corpus", {}).items())
+    print(f"success={ok}  ppl {ppl_txt} (gate {GATE_CORPUS} <= {max_ppl:.2f})  " if max_ppl else f"success={ok}  ppl {ppl_txt}  ")
+    print("  " + " ".join(f"{d}/{s}={final[d][s]['accuracy']:.2f}" for d in ("d_fwd", "d_rev", "s_fwd") for s in D.SETS))
 
     if save:
         save.mkdir(parents=True, exist_ok=True)
@@ -133,7 +146,7 @@ def main():
             "config": {**cfg, "facts": facts_file, "facts_sha": facts_sha, "smoke": SMOKE, "checkpoint": str(save) if save else None},
             "git_commit": commit,
             "seed": a.seed,
-            "metrics": {"final": final, "success": ok, "steps": history[-1]["step"], "epochs": history[-1]["epoch"]},
+            "metrics": {"final": final, "success": ok, "base_ppl": base_ppl, "max_ppl": max_ppl, "steps": history[-1]["step"], "epochs": history[-1]["epoch"]},
             "history": history,
         },
         open(out, "w"),

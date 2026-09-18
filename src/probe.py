@@ -184,13 +184,31 @@ def aggregate(rows):
     return dict(metrics), {str(k): v for k, v in sorted(per_fact.items())}
 
 
-@torch.no_grad()
-def perplexity(model, tok, n_lines=1000, max_len=256, batch_size=16):
-    """Perplexity on the first n_lines prose lines of WikiText-2 test (headings skipped)."""
+# Two utility corpora, for different jobs.
+#   wikitext: kept for continuity with earlier results. Phase 1 replay is drawn from this
+#             corpus's *train* split, so a good score here is partly domain fit, not only
+#             retained ability. Reported, never gated on.
+#   pile:     a held-out slice of what Pythia was actually pretrained on, and never used
+#             for replay. This is the one C2 gates on.
+CORPORA = {
+    "wikitext": ("Salesforce/wikitext", "wikitext-2-raw-v1", "test"),
+    "pile": ("NeelNanda/pile-10k", None, "train"),
+}
+GATE_CORPUS = "pile"
+
+
+def _corpus_lines(name, n_lines):
     from datasets import load_dataset
 
-    ds = load_dataset("Salesforce/wikitext", "wikitext-2-raw-v1", split="test")
-    lines = [t for t in ds["text"] if t.strip() and not t.strip().startswith("=")][:n_lines]
+    path, cfg, split = CORPORA[name]
+    ds = load_dataset(path, cfg, split=split) if cfg else load_dataset(path, split=split)
+    return [t for t in ds["text"] if t.strip() and not t.strip().startswith("=")][:n_lines]
+
+
+@torch.no_grad()
+def perplexity(model, tok, n_lines=1000, max_len=256, batch_size=16, corpus="wikitext"):
+    """Perplexity on the first n_lines prose passages of a held-out corpus."""
+    lines = _corpus_lines(corpus, n_lines)
     nll, n = 0.0, 0
     for i in range(0, len(lines), batch_size):
         enc = tok(lines[i : i + batch_size], return_tensors="pt", padding=True, truncation=True, max_length=max_len).to(model.device)
@@ -201,6 +219,19 @@ def perplexity(model, tok, n_lines=1000, max_len=256, batch_size=16):
         nll += loss.item() * cnt
         n += cnt
     return math.exp(nll / n)
+
+
+def perplexities(model, tok, n_lines=1000, **kw):
+    """Every utility corpus, as {name: ppl}. A corpus that cannot be fetched is skipped
+    rather than failing the run, but the gate corpus missing is an error."""
+    out = {}
+    for name in CORPORA:
+        try:
+            out[name] = perplexity(model, tok, n_lines=n_lines, corpus=name, **kw)
+        except Exception as e:  # noqa: BLE001 - a missing optional corpus must not kill a run
+            print(f"  warning: perplexity corpus {name!r} unavailable: {type(e).__name__}")
+    assert GATE_CORPUS in out, f"the C2 gate corpus {GATE_CORPUS!r} could not be loaded"
+    return out
 
 
 def run(model_name, facts, out, split="heldout", k_alts=None, seed=0, batch_size=64, ppl=True, extra_config=None):
@@ -217,7 +248,8 @@ def run(model_name, facts, out, split="heldout", k_alts=None, seed=0, batch_size
     rows = probe(model, tok, data, split=split, k_alts=k_alts, seed=seed, batch_size=batch_size)
     metrics, per_fact = aggregate(rows)
     if ppl:
-        metrics["ppl"] = perplexity(model, tok, n_lines=20 if SMOKE else 1000)
+        metrics["ppl_by_corpus"] = perplexities(model, tok, n_lines=20 if SMOKE else 1000)
+        metrics["ppl"] = metrics["ppl_by_corpus"][GATE_CORPUS]
     metrics["time_s"] = round(time.time() - t0, 1)
     result = {
         "config": {
@@ -254,7 +286,9 @@ def print_summary(metrics):
         weak = {ti: m for ti, m in metrics[d].get("per_template", {}).items() if m.get("accuracy", 1) < 0.8}
         if weak:
             print(f"  {d} weak templates: " + " ".join(f"t{ti}={m['accuracy']:.2f}" for ti, m in sorted(weak.items())))
-    if "ppl" in metrics:
+    if "ppl_by_corpus" in metrics:
+        print("  ppl " + "  ".join(f"{k}={v:.2f}" + ("*" if k == GATE_CORPUS else "") for k, v in metrics["ppl_by_corpus"].items()) + "   (* = the C2 gate corpus)")
+    elif "ppl" in metrics:
         print(f"  ppl={metrics['ppl']:.2f}")
     print(f"  time={metrics['time_s']}s")
 

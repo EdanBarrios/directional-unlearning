@@ -12,7 +12,7 @@ import argparse
 import json
 from pathlib import Path
 
-from src.probe import DIRECTIONS, print_summary, run
+from src.probe import DIRECTIONS, GATE_CORPUS, print_summary, run
 from src.util import SMOKE
 
 # A control is a pass/fail judgement with a stated threshold, so that "did this run
@@ -20,7 +20,7 @@ from src.util import SMOKE
 THRESHOLDS = {
     "c1_forget_fwd_accuracy_max": 0.05,   # forward direction must actually be gone
     "c2_retain_accuracy_min": 0.80,       # retain set must still work, both directions
-    "c2_ppl_ratio_max": 1.50,             # perplexity may not blow up vs the baseline
+    "c2_ppl_ratio_max": 1.50,             # on the gate corpus, which replay never touches
     "c5_side_accuracy_min": 0.80,         # the entity must survive losing the relation
 }
 
