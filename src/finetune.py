@@ -18,14 +18,18 @@ import yaml
 from src import data as D
 from src.losses import lm_loss
 from src.model import load
-from src.probe import aggregate, probe
+from src.probe import aggregate, perplexity, probe
 from src.seed import rng, set_seed
 from src.train_loop import train
 from src.util import SMOKE, SMOKE_MODEL, SMOKE_STEPS, file_sha, git_commit
 
 
-def quick_eval(model, tok, data, facts_per_set, k_alts, seed):
-    """Held-out probe on a fixed subset of facts per set (all facts if facts_per_set is None)."""
+def quick_eval(model, tok, data, facts_per_set, k_alts, seed, ppl_lines=0):
+    """Held-out probe on a fixed subset of facts per set (all facts if facts_per_set is None).
+
+    With ppl_lines set, also measures general-text perplexity, so the accuracy-versus-utility
+    trade-off is visible during the run rather than discovered at the end.
+    """
     if facts_per_set is None:
         fact_ids = None
     else:
@@ -36,12 +40,18 @@ def quick_eval(model, tok, data, facts_per_set, k_alts, seed):
             fact_ids += r.sample(ids, min(facts_per_set, len(ids)))
     rows = probe(model, tok, data, k_alts=k_alts, seed=seed, quiet=True, fact_ids=fact_ids)
     metrics, _ = aggregate(rows)
+    if ppl_lines:
+        metrics["ppl"] = perplexity(model, tok, n_lines=ppl_lines)
     return metrics
 
 
-def success(ev, threshold):
-    """Phase 1 criterion: D accuracy >= threshold both directions on forget and retain."""
-    return all(ev[d][s]["accuracy"] >= threshold for d in ("d_fwd", "d_rev") for s in ("forget", "retain"))
+def success(ev, threshold, max_ppl=None):
+    """Phase 1 criteria: D accuracy >= threshold both directions on forget and retain,
+    and general-text perplexity within the allowed bound. Both must hold: a model that
+    knows every fact but cannot write English is not a usable starting point."""
+    acc_ok = all(ev[d][s]["accuracy"] >= threshold for d in ("d_fwd", "d_rev") for s in ("forget", "retain"))
+    ppl_ok = max_ppl is None or ev.get("ppl") is None or ev["ppl"] <= max_ppl
+    return acc_ok and ppl_ok
 
 
 def main():
@@ -77,29 +87,41 @@ def main():
     data = D.load_facts(a.facts)
     model, tok = load(cfg["model"])
     records = D.train_records(data)
+
+    # Rehearsal: general text trained alongside the facts, sized in tokens relative to
+    # the fact set. Without it Phase 1 destroys the model (HANDOFF decision 18).
+    replay = None
+    if cfg.get("replay_ratio", 0):
+        fact_tokens = D.count_tokens(tok, records)
+        replay = D.replay_records(tok, int(fact_tokens * cfg["replay_ratio"]), cfg.get("replay_max_len", 64), a.seed)
+        print(f"replay: {len(replay)} sequences, {D.count_tokens(tok, replay)} tokens vs {fact_tokens} fact tokens (ratio {cfg['replay_ratio']})")
     print(f"{len(records)} training sequences, lr={cfg['lr']:g}, epochs={cfg['epochs']}, batch={cfg['batch_size']}")
 
     ev_cfg = cfg["eval"]
+    max_ppl = cfg.get("max_ppl")
+    loss_fn = lambda m, b, aux=None: lm_loss(m, b, aux, replay_weight=cfg.get("replay_weight", 1.0))
     history = train(
         model,
         tok,
         records,
-        lm_loss,
+        loss_fn,
         lr=cfg["lr"],
         batch_size=cfg["batch_size"],
         seed=a.seed,
+        aux_records=replay,
+        aux_batch_size=cfg.get("replay_batch_size"),
         epochs=cfg["epochs"],
         max_steps=cfg.get("max_steps"),
-        eval_fn=lambda m, step, epoch: quick_eval(m, tok, data, ev_cfg["facts_per_set"], ev_cfg["k_alts"], a.seed),
+        eval_fn=lambda m, step, epoch: quick_eval(m, tok, data, ev_cfg["facts_per_set"], ev_cfg["k_alts"], a.seed, ev_cfg.get("ppl_lines", 0)),
         eval_every_epoch=True,
-        stop_fn=(lambda ev: success(ev, cfg["success_accuracy"])) if cfg.get("stop_on_success") else None,
+        stop_fn=(lambda ev: success(ev, cfg["success_accuracy"], max_ppl)) if cfg.get("stop_on_success") else None,
         grad_clip=cfg.get("grad_clip", 1.0),
     )
 
     print("final eval on all facts")
-    final = quick_eval(model, tok, data, None, ev_cfg["k_alts"], a.seed)
-    ok = success(final, cfg["success_accuracy"])
-    print(f"success={ok}  " + " ".join(f"{d}/{s}={final[d][s]['accuracy']:.2f}" for d in ("d_fwd", "d_rev", "s_fwd") for s in D.SETS))
+    final = quick_eval(model, tok, data, None, ev_cfg["k_alts"], a.seed, ppl_lines=20 if SMOKE else 1000)
+    ok = success(final, cfg["success_accuracy"], max_ppl)
+    print(f"success={ok}  ppl={final.get('ppl', float('nan')):.2f} (max {max_ppl})  " + " ".join(f"{d}/{s}={final[d][s]['accuracy']:.2f}" for d in ("d_fwd", "d_rev", "s_fwd") for s in D.SETS))
 
     if save:
         save.mkdir(parents=True, exist_ok=True)

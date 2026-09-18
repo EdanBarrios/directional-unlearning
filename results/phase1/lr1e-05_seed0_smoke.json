@@ -1,0 +1,347 @@
+{
+ "config": {
+  "model": "EleutherAI/pythia-70m",
+  "lr": 1e-05,
+  "epochs": 1,
+  "batch_size": 4,
+  "grad_clip": 1.0,
+  "replay_ratio": 1.0,
+  "replay_max_len": 64,
+  "replay_batch_size": 16,
+  "replay_weight": 1.0,
+  "success_accuracy": 0.9,
+  "max_ppl": 73.1,
+  "stop_on_success": false,
+  "eval": {
+   "facts_per_set": null,
+   "k_alts": 20,
+   "ppl_lines": 200
+  },
+  "max_steps": 3,
+  "facts": "data/facts_smoke.json",
+  "facts_sha": "fb0988a43b86",
+  "smoke": true,
+  "checkpoint": null
+ },
+ "git_commit": "c223cc9-dirty",
+ "seed": 0,
+ "metrics": {
+  "final": {
+   "d_fwd": {
+    "retain": {
+     "margin": 0.08395302295684814,
+     "margin_sum": 0.7031962076822916,
+     "correct_mean": -3.9413415590922036,
+     "n": 3,
+     "margin_corr": 0.07070302295684805,
+     "accuracy": 0.0,
+     "margin_sd": 0.7011762897381915,
+     "margin_corr_sd": 0.17290897834277477
+    },
+    "all": {
+     "margin": 0.052482569217681886,
+     "margin_sum": 0.326214599609375,
+     "correct_mean": -3.9641788482666014,
+     "n": 5,
+     "margin_corr": 0.06560006921768183,
+     "accuracy": 0.0,
+     "margin_sd": 0.5816187760107125,
+     "margin_corr_sd": 0.1287893227767917
+    },
+    "dose": {
+     "margin": 0.43095123767852783,
+     "margin_sum": 0.440338134765625,
+     "correct_mean": -3.64349365234375,
+     "n": 1,
+     "margin_corr": 0.0015699876785276734,
+     "accuracy": 0.0
+    },
+    "forget": {
+     "margin": -0.42039746046066284,
+     "margin_sum": -0.918853759765625,
+     "correct_mean": -4.3533759117126465,
+     "n": 1,
+     "margin_corr": 0.11432128953933729,
+     "accuracy": 0.0
+    },
+    "per_template": {
+     "2": {
+      "margin": 0.052482569217681886,
+      "margin_sum": 0.326214599609375,
+      "correct_mean": -3.9641788482666014,
+      "n": 5,
+      "margin_corr": 0.06560006921768183,
+      "accuracy": 0.0,
+      "margin_sd": 0.5816187760107125,
+      "margin_corr_sd": 0.1287893227767917
+     }
+    }
+   },
+   "d_rev": {
+    "retain": {
+     "margin": -0.1315095822016398,
+     "margin_sum": 0.2808329264322917,
+     "correct_mean": -5.600911458333333,
+     "n": 3,
+     "margin_corr": -0.04782624886830641,
+     "accuracy": 0.0,
+     "margin_sd": 1.771666041813311,
+     "margin_corr_sd": 0.24876189554241845
+    },
+    "all": {
+     "margin": 0.03184812068939209,
+     "margin_sum": 0.14927978515625,
+     "correct_mean": -5.526446533203125,
+     "n": 5,
+     "margin_corr": 0.03980812068939223,
+     "accuracy": 0.0,
+     "margin_sd": 1.2932540987573973,
+     "margin_corr_sd": 0.21653829514256412
+    },
+    "dose": {
+     "margin": 0.6026763916015625,
+     "margin_sum": -2.3380126953125,
+     "correct_mean": -5.164825439453125,
+     "n": 1,
+     "margin_corr": 0.22690139160156297,
+     "accuracy": 0.0
+    },
+    "forget": {
+     "margin": -0.04890704154968262,
+     "margin_sum": 2.241912841796875,
+     "correct_mean": -5.6646728515625,
+     "n": 1,
+     "margin_corr": 0.11561795845031742,
+     "accuracy": 0.0
+    },
+    "per_template": {
+     "2": {
+      "margin": 0.03184812068939209,
+      "margin_sum": 0.14927978515625,
+      "correct_mean": -5.526446533203125,
+      "n": 5,
+      "margin_corr": 0.03980812068939223,
+      "accuracy": 0.0,
+      "margin_sd": 1.2932540987573973,
+      "margin_corr_sd": 0.21653829514256412
+     }
+    }
+   },
+   "s_fwd": {
+    "retain": {
+     "margin": -0.0013657013575236003,
+     "margin_sum": -2.9720967610677085,
+     "correct_mean": -6.144419352213542,
+     "n": 3,
+     "margin_corr": 0.20828846530914324,
+     "accuracy": 0.0,
+     "margin_sd": 1.3410210640572595,
+     "margin_corr_sd": 0.36858863094347166
+    },
+    "all": {
+     "margin": 0.11640775203704834,
+     "margin_sum": 0.52432861328125,
+     "correct_mean": -6.150372314453125,
+     "n": 5,
+     "margin_corr": 0.14551650203704863,
+     "accuracy": 0.0,
+     "margin_sd": 1.0098173458537523,
+     "margin_corr_sd": 0.28085015131511143
+    },
+    "dose": {
+     "margin": -0.14179980754852295,
+     "margin_sum": 4.485992431640625,
+     "correct_mean": -6.506388187408447,
+     "n": 1,
+     "margin_corr": 0.1357376924514775,
+     "accuracy": 0.0
+    },
+    "forget": {
+     "margin": 0.7279356718063354,
+     "margin_sum": 7.05194091796875,
+     "correct_mean": -5.812215328216553,
+     "n": 1,
+     "margin_corr": -0.03302057819366411,
+     "accuracy": 0.0
+    },
+    "per_template": {
+     "2": {
+      "margin": 0.11640775203704834,
+      "margin_sum": 0.52432861328125,
+      "correct_mean": -6.150372314453125,
+      "n": 5,
+      "margin_corr": 0.14551650203704863,
+      "accuracy": 0.0,
+      "margin_sd": 1.0098173458537523,
+      "margin_corr_sd": 0.28085015131511143
+     }
+    }
+   },
+   "ppl": 77.31323807533292
+  },
+  "success": false,
+  "steps": 3,
+  "epochs": 1
+ },
+ "history": [
+  {
+   "step": 3,
+   "epoch": 1,
+   "loss": 10.601520856221518,
+   "eval": {
+    "d_fwd": {
+     "retain": {
+      "margin": 0.08395302295684814,
+      "margin_sum": 0.7031962076822916,
+      "correct_mean": -3.9413415590922036,
+      "n": 3,
+      "margin_corr": 0.07070302295684805,
+      "accuracy": 0.0,
+      "margin_sd": 0.7011762897381915,
+      "margin_corr_sd": 0.17290897834277477
+     },
+     "all": {
+      "margin": 0.052482569217681886,
+      "margin_sum": 0.326214599609375,
+      "correct_mean": -3.9641788482666014,
+      "n": 5,
+      "margin_corr": 0.06560006921768183,
+      "accuracy": 0.0,
+      "margin_sd": 0.5816187760107125,
+      "margin_corr_sd": 0.1287893227767917
+     },
+     "dose": {
+      "margin": 0.43095123767852783,
+      "margin_sum": 0.440338134765625,
+      "correct_mean": -3.64349365234375,
+      "n": 1,
+      "margin_corr": 0.0015699876785276734,
+      "accuracy": 0.0
+     },
+     "forget": {
+      "margin": -0.42039746046066284,
+      "margin_sum": -0.918853759765625,
+      "correct_mean": -4.3533759117126465,
+      "n": 1,
+      "margin_corr": 0.11432128953933729,
+      "accuracy": 0.0
+     },
+     "per_template": {
+      "2": {
+       "margin": 0.052482569217681886,
+       "margin_sum": 0.326214599609375,
+       "correct_mean": -3.9641788482666014,
+       "n": 5,
+       "margin_corr": 0.06560006921768183,
+       "accuracy": 0.0,
+       "margin_sd": 0.5816187760107125,
+       "margin_corr_sd": 0.1287893227767917
+      }
+     }
+    },
+    "d_rev": {
+     "retain": {
+      "margin": -0.1315095822016398,
+      "margin_sum": 0.2808329264322917,
+      "correct_mean": -5.600911458333333,
+      "n": 3,
+      "margin_corr": -0.04782624886830641,
+      "accuracy": 0.0,
+      "margin_sd": 1.771666041813311,
+      "margin_corr_sd": 0.24876189554241845
+     },
+     "all": {
+      "margin": 0.03184812068939209,
+      "margin_sum": 0.14927978515625,
+      "correct_mean": -5.526446533203125,
+      "n": 5,
+      "margin_corr": 0.03980812068939223,
+      "accuracy": 0.0,
+      "margin_sd": 1.2932540987573973,
+      "margin_corr_sd": 0.21653829514256412
+     },
+     "dose": {
+      "margin": 0.6026763916015625,
+      "margin_sum": -2.3380126953125,
+      "correct_mean": -5.164825439453125,
+      "n": 1,
+      "margin_corr": 0.22690139160156297,
+      "accuracy": 0.0
+     },
+     "forget": {
+      "margin": -0.04890704154968262,
+      "margin_sum": 2.241912841796875,
+      "correct_mean": -5.6646728515625,
+      "n": 1,
+      "margin_corr": 0.11561795845031742,
+      "accuracy": 0.0
+     },
+     "per_template": {
+      "2": {
+       "margin": 0.03184812068939209,
+       "margin_sum": 0.14927978515625,
+       "correct_mean": -5.526446533203125,
+       "n": 5,
+       "margin_corr": 0.03980812068939223,
+       "accuracy": 0.0,
+       "margin_sd": 1.2932540987573973,
+       "margin_corr_sd": 0.21653829514256412
+      }
+     }
+    },
+    "s_fwd": {
+     "retain": {
+      "margin": -0.0013657013575236003,
+      "margin_sum": -2.9720967610677085,
+      "correct_mean": -6.144419352213542,
+      "n": 3,
+      "margin_corr": 0.20828846530914324,
+      "accuracy": 0.0,
+      "margin_sd": 1.3410210640572595,
+      "margin_corr_sd": 0.36858863094347166
+     },
+     "all": {
+      "margin": 0.11640775203704834,
+      "margin_sum": 0.52432861328125,
+      "correct_mean": -6.150372314453125,
+      "n": 5,
+      "margin_corr": 0.14551650203704863,
+      "accuracy": 0.0,
+      "margin_sd": 1.0098173458537523,
+      "margin_corr_sd": 0.28085015131511143
+     },
+     "dose": {
+      "margin": -0.14179980754852295,
+      "margin_sum": 4.485992431640625,
+      "correct_mean": -6.506388187408447,
+      "n": 1,
+      "margin_corr": 0.1357376924514775,
+      "accuracy": 0.0
+     },
+     "forget": {
+      "margin": 0.7279356718063354,
+      "margin_sum": 7.05194091796875,
+      "correct_mean": -5.812215328216553,
+      "n": 1,
+      "margin_corr": -0.03302057819366411,
+      "accuracy": 0.0
+     },
+     "per_template": {
+      "2": {
+       "margin": 0.11640775203704834,
+       "margin_sum": 0.52432861328125,
+       "correct_mean": -6.150372314453125,
+       "n": 5,
+       "margin_corr": 0.14551650203704863,
+       "accuracy": 0.0,
+       "margin_sd": 1.0098173458537523,
+       "margin_corr_sd": 0.28085015131511143
+      }
+     }
+    },
+    "ppl": 85.65795559869802
+   },
+   "time_s": 5.8
+  }
+ ]
+}

@@ -10,9 +10,17 @@ import torch
 import torch.nn.functional as F
 
 
-def lm_loss(model, batch, aux=None):
-    """Mean cross-entropy over answer tokens. Phase 1 and Phase 4."""
-    return model(**batch).loss
+def lm_loss(model, batch, aux=None, replay_weight=1.0):
+    """Mean cross-entropy over answer tokens, plus a general-text rehearsal term.
+
+    Without the `aux` (replay) term, ten epochs on 8.7k short templated sentences drives
+    training loss to ~0.01 and WikiText perplexity from 48.75 to 9033: the model learns
+    the facts and forgets English. See HANDOFF decision 18.
+    """
+    loss = model(**batch).loss
+    if aux is not None:
+        loss = loss + replay_weight * model(**aux).loss
+    return loss
 
 
 def seq_logprob(model, batch):

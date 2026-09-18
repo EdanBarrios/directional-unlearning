@@ -102,7 +102,12 @@ def fmt_eval(ev):
     Only the per-set entries are shown; metrics[direction] also carries 'all' and
     'per_template', which are not set summaries.
     """
-    parts = []
+    if "accuracy" in ev:  # a single set summary, as the unlearn and relearn stop probes return
+        # margin_corr is absent when the probe covers too few facts to estimate a prior
+        # (it needs this answer scored under other entities' prompts).
+        corr = f" corr={ev['margin_corr']:+.3f}" if ev.get("margin_corr") is not None else ""
+        return f"acc={ev['accuracy']:.2f} margin={ev['margin']:+.3f}{corr}"
+    parts = [f"ppl={ev['ppl']:.1f}"] if ev.get("ppl") else []
     for d in ("d_fwd", "d_rev", "s_fwd"):
         if d not in ev:
             continue

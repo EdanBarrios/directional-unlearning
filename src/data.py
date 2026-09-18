@@ -71,12 +71,47 @@ def train_records(data: dict, directions=("d_fwd", "d_rev", "s_fwd"), sets=None)
     return out
 
 
+def replay_records(tok, n_tokens: int, max_len: int = 64, seed: int = 0) -> list[dict]:
+    """General-text sequences for rehearsal during Phase 1.
+
+    Drawn from WikiText-2 *train*. The C2 perplexity metric uses the *test* split, so
+    the model is never trained on the text it is later measured on.
+    """
+    from datasets import load_dataset
+
+    from src.seed import rng
+
+    ds = load_dataset("Salesforce/wikitext", "wikitext-2-raw-v1", split="train")
+    lines = [t.strip() for t in ds["text"] if t.strip() and not t.strip().startswith("=")]
+    rng(seed + 991).shuffle(lines)
+    out, total = [], 0
+    for line in lines:
+        ids = tok(line, truncation=True, max_length=max_len)["input_ids"]
+        if len(ids) < 8:
+            continue
+        out.append({"kind": "replay", "ids": ids})
+        total += len(ids)
+        if total >= n_tokens:
+            break
+    return out
+
+
+def count_tokens(tok, records: list[dict]) -> int:
+    """Total answer-plus-prompt tokens across records, for sizing the replay set."""
+    return sum(len(r["ids"]) if r.get("kind") == "replay" else len(tok(r["prompt"])["input_ids"]) + len(tok(r["answer"])["input_ids"]) for r in records)
+
+
 def encode(tok, records: list[dict], device) -> dict:
-    """Right-padded batch. labels are -100 on prompt and pad, so loss covers answer tokens only."""
+    """Right-padded batch. labels are -100 on prompt and pad, so loss covers answer tokens
+    only. Replay records carry raw ids and take loss on every token."""
     import torch
 
     seqs, labs = [], []
     for r in records:
+        if r.get("kind") == "replay":
+            seqs.append(r["ids"])
+            labs.append(r["ids"])
+            continue
         p = tok(r["prompt"])["input_ids"]
         a = tok(r["answer"])["input_ids"]
         seqs.append(p + a)

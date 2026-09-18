@@ -1,12 +1,23 @@
 # Phase 1: bidirectional finetune M0 -> M1.
-# lr and epochs are the open sweep (HANDOFF 7.1): {1e-5, 3e-5, 1e-4}, smallest that succeeds.
+#
+# Replay was added 2026-09-18 (HANDOFF decision 18). Without it, 10 epochs on 8.7k
+# short templated sentences took WikiText perplexity from 48.75 to 9033: the model
+# learned every fact and forgot English. max_ppl makes that a failure, not a pass.
 model: EleutherAI/pythia-160m
-lr: 3.0e-5
+lr: 1.0e-5              # swept {1e-5, 3e-5, 1e-4}; 1e-5 both best and smallest
 epochs: 10
 batch_size: 32
 grad_clip: 1.0
-success_accuracy: 0.9      # held-out D accuracy, both directions, forget and retain sets
-stop_on_success: false     # run all epochs; the sweep wants the whole curve
+
+replay_ratio: 1.0       # general-text tokens per fact token
+replay_max_len: 64      # keeps replay batches close to fact-sequence length
+replay_batch_size: 16
+replay_weight: 1.0
+
+success_accuracy: 0.9   # held-out D accuracy, both directions, forget and retain
+max_ppl: 73.1           # 1.5x the base model's 48.75, matching the C2 threshold
+stop_on_success: false  # run all epochs; the sweep wants the whole curve
 eval:
-  facts_per_set: 10        # per-epoch quick eval subset; final eval uses all facts
-  k_alts: 20               # in-loop alternatives (HANDOFF decision 12)
+  facts_per_set: 10     # per-epoch quick eval subset; final eval uses all facts
+  k_alts: 20            # in-loop alternatives (HANDOFF decision 12)
+  ppl_lines: 200        # per-epoch perplexity; the final eval uses the full 1000
