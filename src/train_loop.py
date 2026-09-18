@@ -21,6 +21,8 @@ def train(
     lr,
     batch_size,
     seed,
+    aux_records=None,
+    aux_batch_size=None,
     epochs=None,
     max_steps=None,
     eval_fn=None,
@@ -32,12 +34,18 @@ def train(
 ):
     """Train in place. Returns a history of {step, epoch, loss, eval} dicts.
 
+    `records` drives the epoch. `aux_records` (the retain set, for a regularized
+    unlearning loss) is sampled independently each step and passed to loss_fn as its
+    third argument, so the retain term sees fresh examples rather than a fixed pairing.
+
     eval_fn(model, step, epoch) -> dict is called at eval points; stop_fn(eval) -> bool
     ends training early. Loss in each history entry is the running mean since the last one.
     """
     assert epochs or max_steps, "need epochs or max_steps"
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0)
     r = rng(seed)
+    r_aux = rng(seed + 1000)
+    aux_bs = aux_batch_size or batch_size
     history, step, epoch = [], 0, 0
     losses, t0 = [], time.time()
 
@@ -58,7 +66,8 @@ def train(
         r.shuffle(order)
         for i in range(0, len(order), batch_size):
             batch = encode(tok, [records[j] for j in order[i : i + batch_size]], model.device)
-            loss = loss_fn(model, batch)
+            aux = encode(tok, r_aux.sample(aux_records, min(aux_bs, len(aux_records))), model.device) if aux_records else None
+            loss = loss_fn(model, batch, aux)
             opt.zero_grad(set_to_none=True)
             loss.backward()
             if grad_clip:

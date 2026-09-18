@@ -1,0 +1,16 @@
+# Phase 2, NPO with a retain regularizer (NPO+GD).
+# beta and retain_weight are HANDOFF 7.2: defaults unless C2 fails.
+method: npo_gd
+beta: 0.1
+retain_weight: 1.0
+lr: 1.0e-5
+batch_size: 32
+retain_batch_size: 32
+max_steps: 500            # cap; hitting it means the run failed C1 (HANDOFF 7.3)
+eval_every: 10
+grad_clip: 1.0
+stop:
+  margin: 0.0             # raw margin, as pre-registered
+  accuracy: 0.05
+eval:
+  k_alts: 20              # in-loop alternatives (HANDOFF decision 12)

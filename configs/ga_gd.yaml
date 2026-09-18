@@ -1,0 +1,16 @@
+# Phase 2, gradient ascent with a retain regularizer (GA+GD).
+# GA is unbounded and will wreck the model if left running, so the stop rule and the
+# retain term are doing real work here. Expect a much lower LR than NPO.
+method: ga_gd
+retain_weight: 1.0
+lr: 1.0e-6
+batch_size: 32
+retain_batch_size: 32
+max_steps: 500            # cap; hitting it means the run failed C1 (HANDOFF 7.3)
+eval_every: 10
+grad_clip: 1.0
+stop:
+  margin: 0.0             # raw margin, as pre-registered
+  accuracy: 0.05
+eval:
+  k_alts: 20              # in-loop alternatives (HANDOFF decision 12)
