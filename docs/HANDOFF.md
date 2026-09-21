@@ -18,7 +18,7 @@ Paste it into any new chat session, along with `docs/CONTEXT.md` (machine, accou
 
 ### Hardware and budget
 
-- Local: **none usable.** The laptop is a 2020 MacBook Air, 1.1 GHz Intel i5, 8 GB, Intel Iris, x86_64. (The 2026-09-16 "correction" to an M4 with 16 GB was itself wrong; verified against the machine 2026-09-20.) torch 2.14 publishes no macOS x86_64 wheel, the last on PyPI that did is 2.2.2, and `uv sync` therefore cannot resolve. No MPS, no CUDA. A conda-forge torch 2.5.1 exists in anaconda but is not the pinned environment, so everything, smoke tests included, runs on Kaggle.
+- Local: **cannot reproduce the pinned environment.** The laptop is a 2020 MacBook Air, 1.1 GHz Intel i5, 8 GB, Intel Iris, x86_64. (The 2026-09-16 "correction" to an M4 with 16 GB was itself wrong; verified against the machine 2026-09-20.) torch 2.14 publishes no macOS x86_64 wheel, the last on PyPI that did is 2.2.2, and `uv sync` therefore cannot resolve. No MPS, no CUDA. A conda-forge torch 2.5.1 exists in anaconda but is not the pinned environment, so everything, smoke tests included, runs on Kaggle.
 - Compute: free tiers only. Kaggle is primary (about 30 GPU-hours/week, T4 or P100, 12-hour sessions, headless execution via Save Version). Colab and Lightning AI are backups.
 - Everything is sized for Pythia-70m to 410m.
 
