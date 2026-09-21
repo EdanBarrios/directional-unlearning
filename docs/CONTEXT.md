@@ -5,8 +5,16 @@ chat alongside `docs/HANDOFF.md` and `CLAUDE.md` when picking the project back u
 
 ## Machine and accounts
 
-- Laptop as of 2026-09-20: Apple M4, 16 GB, MPS available, no CUDA. (The old work laptop
-  was returned; HANDOFF v2 originally described an Intel Air, which was wrong.)
+- Laptop as of 2026-09-20, verified from About This Mac: **MacBook Air, Retina 13-inch,
+  2020. 1.1 GHz quad-core Intel Core i5, Intel Iris Plus, 8 GB, macOS 15.7.7. x86_64.**
+  No MPS, no CUDA.
+- **Nothing in this project runs on it.** `uv sync` fails outright: torch 2.14 ships
+  `macosx_14_0_arm64` wheels and no x86_64 macOS wheel, and the last torch that had one
+  is 2.2.2, from early 2024. This is a resolution failure, not a slow machine. Smoke
+  tests included. Every run happens on Kaggle or Colab.
+- The earlier note in this file, that the laptop is an Apple M4 with 16 GB and that
+  HANDOFF v2's Intel Air was the error, had it backwards. The M4 was most likely the
+  work laptop that was returned. Corrected 2026-09-20 against the actual machine.
 - Kaggle username `edanbarriosidrugo`. The current CLI reads a `KGAT_` token from
   `~/.kaggle/access_token`, **not** `kaggle.json`. Phone verification is done, so GPU
   sessions work. The token from the old machine should be regenerated.
@@ -22,6 +30,11 @@ git clone https://github.com/EdanBarrios/directional-unlearning.git
 cd directional-unlearning && uv sync
 SMOKE=1 uv run python -u -m src.finetune --config configs/phase1.yaml --seed 0 --no-save
 ```
+
+That works on an arm64 Mac or a Linux box. It does **not** work on the current x86_64
+Air, where `uv sync` stops at torch. On that machine the equivalent first move is a
+Kaggle notebook: clone, `pip install -e .`, and run the same SMOKE command as the first
+cell of the session.
 
 Nothing under `checkpoints/` is committed, by design: every checkpoint is reproducible
 from committed code plus its seed, and each results file records the commit it ran from.
@@ -56,9 +69,14 @@ Each of these cost real time and is recorded so it is not rediscovered.
 - **A measurement can be precise and still answer the wrong question.** One held-out
   template scored 0.07 because it ended in a bare `{name} ... is`, which 25 other
   templates had taught meant "give the description." See HANDOFF decision 15.
-- **Reference timings, M4 fp32 Pythia-160m:** 618 ms/step at batch 32, ~3.2 min/epoch,
+- **Reference timings, fp32 Pythia-160m:** 618 ms/step at batch 32, ~3.2 min/epoch,
   22 s per in-loop eval. Grad clip is 42% of the step because MPS has no `foreach` path;
-  on CUDA it is not.
+  on CUDA it is not. These were measured on the machine HANDOFF v2 called an M4, which is
+  no longer available, so they are history rather than a baseline. Re-measure on the T4
+  before using them to size anything.
+- **Check the machine before trusting a doc about the machine.** Two files asserted an
+  M4 with 16 GB and MPS for four days. One `uname -m` would have caught it, and the cost
+  was a plan that put Phase 0 and Phase 1 iteration somewhere they cannot run.
 
 ## Companion artifacts
 

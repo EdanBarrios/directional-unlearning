@@ -36,7 +36,7 @@ python -m src.quantize --checkpoint checkpoints/npo_gd_u_both_seed0 --fp32-resul
 
 Phase 5 needs CUDA: `uv sync --extra cuda` on a CUDA box, never locally.
 
-`SMOKE=1` in front of any command switches to Pythia-70m, 5 facts, 2 templates, 3 steps. Every script must honor it. Run smoke before any GPU run.
+`SMOKE=1` in front of any command switches to Pythia-70m, 5 facts, 2 templates, 3 steps. Every script must honor it. Run smoke before any real run, as the first cell of the Kaggle session, since there is no local environment to run it in.
 
 ## Conventions
 
@@ -53,11 +53,11 @@ Phase 5 needs CUDA: `uv sync --extra cuda` on a CUDA box, never locally.
 
 - Do not change a condition, seed, threshold, or metric definition silently. State it in the response and update `docs/HANDOFF.md` section 6 or 7.
 - Do not commit checkpoints, HF cache, `.env`, tokens, or notebook outputs. `.gitignore` covers these; keep it that way.
-- Local machine is an Apple M4, 16 GB, MPS available. Smoke tests and Phase 0/1 iteration can run locally. The full seed grid and anything needing CUDA (Phase 5, bitsandbytes) run on Kaggle.
-- Run long jobs as `caffeinate -i uv run python -u -m ...`. Without `-u` Python block-buffers stdout when not attached to a terminal, so a running job looks hung until it exits.
-- Prefix every local training run with `caffeinate -i`. A sleeping laptop suspends the job, and wall-clock `time_s` in the results file counts the sleep as compute. Never run a second GPU job while one is training; both slow down and the timings become meaningless.
-- Reference timings, M4 fp32 Pythia-160m: 618 ms per step at batch 32, 3.2 min per Phase 1 epoch, 22 s per in-loop eval. Grad clip is 42% of the step because MPS has no `foreach` path; on CUDA it is not.
-- Python env is managed by `uv`. Prefix commands with `uv run` locally. On Kaggle, `pip install` from `pyproject.toml`.
+- **There is no local environment. Every run happens on Kaggle or Colab, smoke tests included.** The laptop is a 2020 MacBook Air, x86_64, 8 GB, Intel Iris, no MPS and no CUDA, and `uv sync` fails on it: torch 2.14 has no macOS x86_64 wheel, and the last torch that did is 2.2.2. Do not propose a local run, a local smoke test, or a local timing. See `docs/CONTEXT.md`.
+- Always `python -u`. Without it Python block-buffers stdout when not attached to a terminal, so a running job looks hung until it exits. This bites on Kaggle exactly as it did locally.
+- Never run a second GPU job while one is training; both slow down and the wall-clock `time_s` in the results file stops meaning compute. (`caffeinate -i` was the local version of this rule, from when there was a local machine. It no longer applies.)
+- Reference timings, fp32 Pythia-160m: 618 ms per step at batch 32, 3.2 min per Phase 1 epoch, 22 s per in-loop eval. Measured on a machine that is no longer available, so treat them as history and re-measure on the T4.
+- Python env is managed by `uv`, which is what an arm64 or Linux box would use. On this laptop it cannot resolve, so the working path is Kaggle: `pip install` from `pyproject.toml`.
 - Small pure functions. No state that exists only in a notebook cell.
 - Short docstrings. No em-dashes in docs, comments, or commit messages.
 - If a run fails the C1 check (forward accuracy not near zero after unlearning), mark it failed in the results file and stop. Do not tune until it passes.

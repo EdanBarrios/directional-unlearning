@@ -21,10 +21,13 @@ Design locked 2026-09-16. Code in progress.
 
 ```
 uv sync
-SMOKE=1 uv run python -m src.probe --model EleutherAI/pythia-70m --facts data/facts.json --out results/phase0/smoke.json
+SMOKE=1 uv run python -u -m src.probe --model EleutherAI/pythia-70m --facts data/facts.json --out results/phase0/smoke.json
 ```
 
-Full runs happen on Kaggle. See `kaggle_launch.ipynb`.
+That needs an arm64 Mac or a Linux box. torch 2.14 publishes no macOS x86_64 wheel, so
+on an Intel Mac `uv sync` stops at torch and there is no local environment to be had.
+
+Every run, smoke tests included, happens on Kaggle. See `kaggle_launch.ipynb`.
 
 ## License
 

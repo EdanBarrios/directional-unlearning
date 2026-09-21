@@ -18,7 +18,7 @@ Paste it into any new chat session, along with `docs/CONTEXT.md` (machine, accou
 
 ### Hardware and budget
 
-- Local: Apple M4 MacBook, 16 GB unified memory, MPS available. (Corrected 2026-09-16; v2 originally said Intel.) Current torch (2.14) and transformers (5.17) via `uv`. A Pythia-160m full finetune in fp32 needs about 2.5 GB, so Phase 0 and Phase 1 iteration can happen locally. Not available locally: CUDA, so bitsandbytes NF4 (Phase 5) is Kaggle only.
+- Local: **none usable.** The laptop is a 2020 MacBook Air, 1.1 GHz Intel i5, 8 GB, Intel Iris, x86_64. (The 2026-09-16 "correction" to an M4 with 16 GB was itself wrong; verified against the machine 2026-09-20.) torch 2.14 publishes no macOS x86_64 wheel, the last version that did is 2.2.2, and `uv sync` therefore fails outright. No MPS, no CUDA, no local smoke test. Everything runs on Kaggle.
 - Compute: free tiers only. Kaggle is primary (about 30 GPU-hours/week, T4 or P100, 12-hour sessions, headless execution via Save Version). Colab and Lightning AI are backups.
 - Everything is sized for Pythia-70m to 410m.
 
@@ -222,7 +222,7 @@ Stop rule: evaluate every 10 steps on the held-out forward prompts of the forget
 | 6 | 5 seeds per cell | single-seed results are a red flag |
 | 7 | Headline Q1 relearning asymmetry; secondary Q2 quantization | the gaps prior work leaves open |
 | 8 | Full finetune, fp32, hand-written loop, no LoRA, no HF Trainer | LoRA confounds storage; custom losses fight Trainer |
-| 9 | Kaggle for the seed grid and Phase 5; local M4 for smoke tests and Phase 0/1 iteration (amended 2026-09-16) | headless, quota-friendly; local MPS is free |
+| 9 | **Kaggle for everything, smoke tests included (amended 2026-09-20).** Previously: Kaggle for the seed grid and Phase 5, local machine for smoke tests and Phase 0/1 iteration (2026-09-16) | The local half of that decision rested on an M4 with MPS that this project does not have. The real machine is an x86_64 2020 Air where `uv sync` cannot resolve torch at all, so "iterate locally, then launch" was never available. Practical effect: the Kaggle session is the dev loop, so commit before launching and run `SMOKE=1` as the session's first cell |
 | 10 | Public repo, MIT license | nothing to protect; evidence of running experiments |
 | 11 | Entities built from committed word lists by a seeded combinator (`gen_facts.py`), not free-form LLM generation (locked 2026-09-16) | uniqueness by construction; deterministic regeneration; a Phase 0 reject is replaced by the next draw. Word lists themselves are LLM-written once and committed |
 | 18 | Phase 1 trains with general-text replay, and gates on perplexity as well as accuracy (2026-09-18) | The first real M1 met every accuracy criterion (D forward 0.97/0.99/0.98, reverse 1.00 everywhere) while WikiText perplexity went 48.75 -> 9033 and the model could only emit dataset vocabulary: "The capital of France is" -> " Marrowburrowburrowburrow". lr 3e-5 reached 8e8. This is catastrophic forgetting, threat 1 in section 8, and it makes C2 meaningless because a wrecked M1 has no utility left to protect. Replay is WikiText-2 *train* (the perplexity metric uses *test*, so no overlap), sized 1:1 in tokens against the fact set, trained as a second batch per step with equal loss weight. Phase 1 success now also requires ppl <= 73.1, which is 1.5x base and matches the C2 threshold. Per-epoch perplexity is logged so the trade-off is visible during the run |
