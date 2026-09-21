@@ -4,7 +4,7 @@ Status: design locked 2026-09-16. No code written. Supersedes v1.
 
 ## 0. How to use this document
 
-Paste it into any new chat session. Claude Code reads `CLAUDE.md` automatically; this file supplies the design context that `CLAUDE.md` does not. Decisions get written back here, never left in chat. Sections 6 and 7 are the live parts.
+Paste it into any new chat session, along with `docs/CONTEXT.md` (machine, accounts, and lessons learned the hard way). Claude Code reads `CLAUDE.md` automatically; this file supplies the design context that `CLAUDE.md` does not. Decisions get written back here, never left in chat. Sections 6 and 7 are the live parts.
 
 ---
 
