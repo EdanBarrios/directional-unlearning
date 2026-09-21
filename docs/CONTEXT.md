@@ -22,10 +22,18 @@ chat alongside `docs/HANDOFF.md` and `CLAUDE.md` when picking the project back u
   osx-64 after PyPI stopped. `transformers` is not installed there. So a hand-built
   CPU-only conda environment is not impossible, just unproven and outside the lock
   file, and it would be CPU-only on a 1.1 GHz i5.
+- Even if that environment were built, the machine is too slow to iterate on. Measured
+  2026-09-20 with the conda torch 2.5.1: a 162M-parameter transformer of Pythia-160m's
+  shape (12 layers, d=768, ff=3072, vocab 50k), fp32, one fwd + bwd + AdamW step at the
+  Phase 1 batch of 32 by 20 tokens, took **46.4 s/step**, against 0.618 s/step on the
+  machine the old docs called an M4. That is 75x. Phase 1 would be about 3.5 hours per
+  epoch and 35 hours for the ten-epoch run, versus minutes on a T4. (A plain
+  `nn.TransformerEncoder`, not GPT-NeoX, so treat it as the right order of magnitude
+  rather than an exact figure.)
 - Practical rule: **every run happens on Kaggle or Colab, smoke tests included.** Not
   because a local run is categorically impossible, but because reproducing the pinned
-  environment is, and a smoke test in an environment that is not the one the real run
-  uses tests the wrong thing.
+  environment is, the hardware is 75x off, and a smoke test in an environment that is
+  not the one the real run uses tests the wrong thing.
 - The earlier note in this file, that the laptop is an Apple M4 with 16 GB and that
   HANDOFF v2's Intel Air was the error, had it backwards. The M4 was most likely the
   work laptop that was returned. Corrected 2026-09-20 against the actual machine.
