@@ -8,10 +8,24 @@ chat alongside `docs/HANDOFF.md` and `CLAUDE.md` when picking the project back u
 - Laptop as of 2026-09-20, verified from About This Mac: **MacBook Air, Retina 13-inch,
   2020. 1.1 GHz quad-core Intel Core i5, Intel Iris Plus, 8 GB, macOS 15.7.7. x86_64.**
   No MPS, no CUDA.
-- **Nothing in this project runs on it.** `uv sync` fails outright: torch 2.14 ships
-  `macosx_14_0_arm64` wheels and no x86_64 macOS wheel, and the last torch that had one
-  is 2.2.2, from early 2024. This is a resolution failure, not a slow machine. Smoke
-  tests included. Every run happens on Kaggle or Colab.
+- **The locked environment cannot be installed on it.** `uv sync` fails to resolve:
+  torch 2.14 ships `macosx_14_0_arm64` wheels and no x86_64 macOS wheel, and the last
+  torch on PyPI that had one is 2.2.2, from early 2024. Verified 2026-09-20:
+
+  ```
+  error: Distribution `torch==2.14.0` can't be installed because it doesn't have a
+  source distribution or wheel for the current platform
+  ```
+
+- There is nonetheless **one** local torch: anaconda at `/opt/anaconda3` carries a
+  conda-forge build, torch 2.5.1 on Python 3.13, because conda-forge kept building
+  osx-64 after PyPI stopped. `transformers` is not installed there. So a hand-built
+  CPU-only conda environment is not impossible, just unproven and outside the lock
+  file, and it would be CPU-only on a 1.1 GHz i5.
+- Practical rule: **every run happens on Kaggle or Colab, smoke tests included.** Not
+  because a local run is categorically impossible, but because reproducing the pinned
+  environment is, and a smoke test in an environment that is not the one the real run
+  uses tests the wrong thing.
 - The earlier note in this file, that the laptop is an Apple M4 with 16 GB and that
   HANDOFF v2's Intel Air was the error, had it backwards. The M4 was most likely the
   work laptop that was returned. Corrected 2026-09-20 against the actual machine.
