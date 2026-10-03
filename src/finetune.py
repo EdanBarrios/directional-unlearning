@@ -40,6 +40,12 @@ def quick_eval(model, tok, data, facts_per_set, k_alts, seed, ppl_lines=0):
             fact_ids += r.sample(ids, min(facts_per_set, len(ids)))
     rows = probe(model, tok, data, k_alts=k_alts, seed=seed, quiet=True, fact_ids=fact_ids)
     metrics, _ = aggregate(rows)
+    if facts_per_set is not None:
+        # Same facts on the training templates. Separates "not learning the facts" from
+        # "learning them but not generalizing to held-out phrasings". k_alts=1 keeps it
+        # cheap; only accuracy is read from it.
+        train_m, _ = aggregate(probe(model, tok, data, split="train", k_alts=1, seed=seed, quiet=True, fact_ids=fact_ids))
+        metrics["train_acc"] = {d: {s: train_m[d][s]["accuracy"] for s in D.SETS} for d in ("d_fwd", "d_rev", "s_fwd")}
     if ppl_lines:
         metrics["ppl_by_corpus"] = perplexities(model, tok, n_lines=ppl_lines)
         metrics["ppl"] = metrics["ppl_by_corpus"][GATE_CORPUS]
@@ -65,6 +71,7 @@ def main():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--lr", type=float)
     p.add_argument("--epochs", type=int)
+    p.add_argument("--replay-weight", type=float)
     p.add_argument("--facts", default="data/facts.json")
     p.add_argument("--out", help="results json; default results/phase1/lr{lr}_seed{seed}.json")
     p.add_argument("--save", help="checkpoint dir; default checkpoints/phase1_lr{lr}_seed{seed}")
@@ -76,6 +83,8 @@ def main():
         cfg["lr"] = a.lr
     if a.epochs:
         cfg["epochs"] = a.epochs
+    if a.replay_weight is not None:
+        cfg["replay_weight"] = a.replay_weight
     if SMOKE:
         cfg.update(model=SMOKE_MODEL, epochs=1, max_steps=SMOKE_STEPS, batch_size=4)
         cfg["eval"]["facts_per_set"] = None
