@@ -31,11 +31,17 @@ def fill(template: str, fact: dict) -> str:
 
 
 def templates(data: dict, direction: str, split: str) -> list[tuple[int, str]]:
-    """(index, template) pairs for one direction and split ('train' or 'heldout')."""
+    """(index, template) pairs for one direction and split ('train' or 'heldout').
+
+    `extra_train` templates (decision 23, present only in an augmented facts file) are
+    training templates indexed after the held-out ones, so held-out indices never move.
+    """
     t = data["templates"][DIRECTIONS[direction][0]]
-    n = t["train"]
-    idx = range(n) if split == "train" else range(n, len(t["templates"]))
-    return [(i, t["templates"][i]) for i in idx]
+    n, base = t["train"], t["templates"]
+    if split != "train":
+        return [(i, base[i]) for i in range(n, len(base))]
+    extra = t.get("extra_train", [])
+    return [(i, base[i]) for i in range(n)] + [(len(base) + j, x) for j, x in enumerate(extra)]
 
 
 def prompts(data: dict, direction: str, split: str, sets=None, fact_ids=None) -> list[dict]:
