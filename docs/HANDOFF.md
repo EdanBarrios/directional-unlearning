@@ -327,6 +327,26 @@ Daily minimum: launch one run or solve one problem. Full day: launch a run first
 
 November: Gemma 4 Developer Agent Competition (Kaggle, final submission 2026-12-02), plus Q2 and seeds 3 and 4. Not before the application is in. tensor-lockin is shelved.
 
+### Status at end of session, 2026-10-03 (Saturday)
+
+**In flight. Check these first.**
+
+| Job | Where | Commit | What it answers |
+|---|---|---|---|
+| Re-score of the KL model as M1 | Kaggle, latest version of `du-phase1-replay`, input dataset `du-m1-kl` | `4cec248` launcher | First real run of the decision 21/22 code (smoke runs every phase). Prints greedy generations for d_fwd t26/t28/t29, d_rev t26, s_fwd t9. Ends on the Phase 1 assert by design, since item 18 already shows this model fails |
+| A: KL recipe + 58 extra training templates, 5 epochs | Colab tab, `colab_A_aug.ipynb` | `5dc4a93` | Does template diversity fix t26/t9 (decision 23)? |
+| B: KL recipe at lr 3e-5, 10 epochs | Kaggle notebook `du-phase1-kl-lr3e-5` | `5dc4a93` | Do bigger updates generalize better now that KL holds perplexity? |
+
+**On return:**
+1. Re-score output: did the smoke cell pass end to end? If not, that is the first fix, before anything else. Read the t26/t9 generations.
+2. Check dataset `du-m1-kl` still holds `M1/model.safetensors` (~649 MB); a dataset made from notebook output can auto-update with later versions.
+3. A and B results: paste the gate cell output, or the results JSON link (Claude can fetch signed Kaggle links directly). `python -m src.report <file>` regenerates all tables.
+4. If either passes the gate (candidate accuracy >= 0.90 both D directions, forget and retain; pile <= 1.5x base), save its `M1/` as a Kaggle Dataset and launch Phase 2 with `RUN_PHASE2 = True`: 2 methods x 4 conditions, seed 0, each evaluated against M1. If A wins, set FACTS to `data/facts_aug.json` everywhere and make the Phase 4 template sampler draw from the original 25 first (decision 23).
+5. If neither passes: do not loosen the gate. Next candidates are A and B combined, or more augmentation. Decide from the per-template table, not the set averages.
+6. Edan's 3 sentences, still owed: why does a model that knows the fact rank other names above the right one after "When people speak of {desc}, they mean"?
+
+**Schedule (2026-10-03).** One day behind the original Oct 5 target, which moved to Oct 6 (decisions 21, 22). Phase 1 has no passing M1 yet after 6 runs, but the code for Phases 2 to 5 is now measuring the right thing, which it was not on Oct 2; launching the Q0 grid on the old metric would have produced 12 runs that failed C2/C5 by construction. Oct 6 holds if A or B passes today and Phase 2 seed 0 runs Oct 4 to 5. Oct 12 (Q0 table, 3 seeds) is tight: the grid is now 8 runs per seed (u_rev added) with 150-way in-loop evals, roughly 2x the eval cost per run; use both Kaggle and Colab. Test prep is behind: no Alcumus or no-Claude coding hour logged Oct 2 or 3, and the first Saturday mock (today) has not happened.
+
 ## 11. Glossary
 
 - **Log-prob margin:** log-probability the model assigns to the correct answer minus the average it assigns to wrong alternatives. Zero means the model cannot tell them apart.
