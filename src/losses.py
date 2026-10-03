@@ -10,17 +10,34 @@ import torch
 import torch.nn.functional as F
 
 
-def lm_loss(model, batch, aux=None, replay_weight=1.0):
+def lm_loss(model, batch, aux=None, replay_weight=1.0, ref=None, kl_weight=0.0):
     """Mean cross-entropy over answer tokens, plus a general-text rehearsal term.
 
     Without the `aux` (replay) term, ten epochs on 8.7k short templated sentences drives
     training loss to ~0.01 and WikiText perplexity from 48.75 to 9033: the model learns
     the facts and forgets English. See HANDOFF decision 18.
+
+    With `ref` (the frozen base model) and kl_weight > 0, also penalizes KL(base || model)
+    on the replay tokens, holding the whole next-token distribution near the base model
+    rather than only the observed token (HANDOFF decision 20).
     """
     loss = model(**batch).loss
     if aux is not None:
-        loss = loss + replay_weight * model(**aux).loss
+        out = model(**aux)
+        loss = loss + replay_weight * out.loss
+        if ref is not None and kl_weight:
+            loss = loss + kl_weight * kl_to_ref(out.logits, ref, aux)
     return loss
+
+
+def kl_to_ref(logits, ref, batch):
+    """Mean per-token KL(ref || model) over non-pad positions."""
+    with torch.no_grad():
+        ref_lp = F.log_softmax(ref(input_ids=batch["input_ids"], attention_mask=batch["attention_mask"]).logits.float(), -1)
+    lp = F.log_softmax(logits.float(), -1)
+    kl = (ref_lp.exp() * (ref_lp - lp)).sum(-1)
+    mask = batch["attention_mask"].float()
+    return (kl * mask).sum() / mask.sum()
 
 
 def seq_logprob(model, batch):

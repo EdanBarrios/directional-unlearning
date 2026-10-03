@@ -16,6 +16,7 @@ replay_corpus: wikitext-103-raw-v1
 replay_max_len: 64      # keeps replay batches close to fact-sequence length
 replay_batch_size: 16
 replay_weight: 1.0
+kl_weight: 0.0          # KL(base || model) on replay tokens; 0 = off (decision 20)
 
 success_accuracy: 0.9   # held-out D accuracy, both directions, forget and retain
 max_ppl_ratio: 1.5      # vs this model's own pre-training perplexity, measured at run start,

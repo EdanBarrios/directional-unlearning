@@ -72,6 +72,7 @@ def main():
     p.add_argument("--lr", type=float)
     p.add_argument("--epochs", type=int)
     p.add_argument("--replay-weight", type=float)
+    p.add_argument("--kl-weight", type=float)
     p.add_argument("--facts", default="data/facts.json")
     p.add_argument("--out", help="results json; default results/phase1/lr{lr}_seed{seed}.json")
     p.add_argument("--save", help="checkpoint dir; default checkpoints/phase1_lr{lr}_seed{seed}")
@@ -85,6 +86,8 @@ def main():
         cfg["epochs"] = a.epochs
     if a.replay_weight is not None:
         cfg["replay_weight"] = a.replay_weight
+    if a.kl_weight is not None:
+        cfg["kl_weight"] = a.kl_weight
     if SMOKE:
         cfg.update(model=SMOKE_MODEL, epochs=1, max_steps=SMOKE_STEPS, batch_size=4)
         cfg["eval"]["facts_per_set"] = None
@@ -130,7 +133,12 @@ def main():
     max_ppl = base_ppl[GATE_CORPUS] * cfg["max_ppl_ratio"] if base_ppl else cfg.get("max_ppl")
     if base_ppl:
         print("base ppl " + "  ".join(f"{k}={v:.2f}" for k, v in base_ppl.items()) + f"  -> gate {GATE_CORPUS} <= {max_ppl:.2f} ({cfg['max_ppl_ratio']}x)")
-    loss_fn = lambda m, b, aux=None: lm_loss(m, b, aux, replay_weight=cfg.get("replay_weight", 1.0))
+    ref = None
+    if cfg.get("kl_weight") and replay:
+        ref, _ = load(cfg["model"])
+        ref.requires_grad_(False)
+        print(f"kl to base on replay tokens, weight {cfg['kl_weight']}")
+    loss_fn = lambda m, b, aux=None: lm_loss(m, b, aux, replay_weight=cfg.get("replay_weight", 1.0), ref=ref, kl_weight=cfg.get("kl_weight", 0.0))
     history = train(
         model,
         tok,
