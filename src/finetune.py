@@ -2,11 +2,13 @@
 
 Trains on the training templates of D forward, D reverse, and S forward for every
 entity. Evaluates held-out accuracy and margin each epoch on a fixed fact subset,
-then on all facts at the end. Success: held-out accuracy >= 0.9 in both D
-directions on both the forget and retain sets.
+then on all facts at the end. Success: held-out candidate accuracy (rank 1 of 150,
+decision 21) >= 0.9 in both D directions on both the forget and retain sets, and pile
+perplexity within 1.5x of the base model measured on the same lines.
 
     python -m src.finetune --config configs/phase1.yaml --seed 0
     python -m src.finetune --config configs/phase1.yaml --seed 0 --lr 3e-5 --epochs 10
+    python -m src.finetune --rescore /kaggle/input/du-m1-kl/M1 --out results/phase1/M1_kl_rescore.json
 """
 
 import argparse
@@ -43,7 +45,7 @@ def quick_eval(model, tok, data, facts_per_set, k_alts, seed, ppl_lines=0):
     if facts_per_set is not None:
         # Same facts on the training templates. Separates "not learning the facts" from
         # "learning them but not generalizing to held-out phrasings". k_alts=1 keeps it
-        # cheap; only accuracy is read from it.
+        # cheap; only greedy accuracy is read from it.
         train_m, _ = aggregate(probe(model, tok, data, split="train", k_alts=1, seed=seed, quiet=True, fact_ids=fact_ids))
         metrics["train_acc"] = {d: {s: train_m[d][s]["accuracy"] for s in D.SETS} for d in ("d_fwd", "d_rev", "s_fwd")}
     if ppl_lines:
@@ -53,16 +55,58 @@ def quick_eval(model, tok, data, facts_per_set, k_alts, seed, ppl_lines=0):
 
 
 def success(ev, threshold, max_ppl=None):
-    """Phase 1 criteria: D accuracy >= threshold both directions on forget and retain,
-    and utility within the allowed bound on the gate corpus. Both must hold: a model that
-    knows every fact but cannot write English is not a usable starting point.
+    """Phase 1 criteria: D candidate accuracy >= threshold both directions on forget and
+    retain, and utility within the allowed bound on the gate corpus. Both must hold: a
+    model that knows every fact but cannot write English is not a usable starting point.
 
     max_ppl is derived from the base model measured in this same run, not hardcoded, so
-    the gate does not drift when the corpus or the model changes.
+    the gate does not drift when the corpus or the model changes. A missing perplexity
+    or gate fails: an unmeasured gate is not a passed one.
     """
-    acc_ok = all(ev[d][s]["accuracy"] >= threshold for d in ("d_fwd", "d_rev") for s in ("forget", "retain"))
-    ppl_ok = max_ppl is None or ev.get("ppl") is None or ev["ppl"] <= max_ppl
+    acc_ok = all(ev[d][s]["cand_accuracy"] >= threshold for d in ("d_fwd", "d_rev") for s in ("forget", "retain"))
+    ppl_ok = max_ppl is not None and ev.get("ppl") is not None and ev["ppl"] <= max_ppl
     return acc_ok and ppl_ok
+
+
+def final_gate(model, tok, data, base_model, cfg, seed):
+    """Full held-out eval of a trained model against the gate, with the base model's
+    perplexity measured on the same lines as the final eval, so the ratio compares like
+    with like."""
+    n_lines = 20 if SMOKE else 1000
+    base_ppl = perplexities(base_model, tok, n_lines=n_lines)
+    max_ppl = base_ppl[GATE_CORPUS] * cfg["max_ppl_ratio"]
+    final = quick_eval(model, tok, data, None, cfg["eval"]["k_alts"], seed, ppl_lines=n_lines)
+    ok = success(final, cfg["success_accuracy"], max_ppl)
+    ppl_txt = "  ".join(f"{k}={v:.2f}" for k, v in final.get("ppl_by_corpus", {}).items())
+    print(f"success={ok}  ppl {ppl_txt} (gate {GATE_CORPUS} <= {max_ppl:.2f}, base {base_ppl[GATE_CORPUS]:.2f} on {n_lines} lines)")
+    for key in ("cand_accuracy", "accuracy"):
+        print(f"  {key:13} " + " ".join(f"{d}/{s}={final[d][s][key]:.2f}" for d in ("d_fwd", "d_rev", "s_fwd") for s in D.SETS))
+    return final, ok, base_ppl, max_ppl
+
+
+def rescore(a, cfg):
+    """Phase 1 gate on an existing checkpoint, no training. Used when the gate's metric
+    changed after the checkpoint was trained (decision 21)."""
+    out = Path(a.out)
+    assert not out.exists(), f"{out} exists; new run, new file"
+    commit, facts_file = git_commit(), D.facts_path(a.facts)
+    set_seed(a.seed)
+    data = D.load_facts(a.facts)
+    base, _ = load(cfg["model"])
+    model, tok = load(a.rescore)
+    final, ok, base_ppl, max_ppl = final_gate(model, tok, data, base, cfg, a.seed)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    json.dump(
+        {
+            "config": {**cfg, "rescored_checkpoint": a.rescore, "facts": facts_file, "facts_sha": file_sha(facts_file), "smoke": SMOKE},
+            "git_commit": commit,
+            "seed": a.seed,
+            "metrics": {"final": final, "success": ok, "base_ppl": base_ppl, "max_ppl": max_ppl},
+        },
+        open(out, "w"),
+        indent=1,
+    )
+    print(f"wrote {out}")
 
 
 def main():
@@ -77,6 +121,7 @@ def main():
     p.add_argument("--out", help="results json; default results/phase1/lr{lr}_seed{seed}.json")
     p.add_argument("--save", help="checkpoint dir; default checkpoints/phase1_lr{lr}_seed{seed}")
     p.add_argument("--no-save", action="store_true")
+    p.add_argument("--rescore", help="checkpoint to run the Phase 1 gate on, without training")
     a = p.parse_args()
 
     cfg = yaml.safe_load(open(a.config))
@@ -91,6 +136,9 @@ def main():
     if SMOKE:
         cfg.update(model=SMOKE_MODEL, epochs=1, max_steps=SMOKE_STEPS, batch_size=4)
         cfg["eval"]["facts_per_set"] = None
+    if a.rescore:
+        assert a.out, "--rescore needs --out"
+        return rescore(a, cfg)
     tag = f"lr{cfg['lr']:g}_seed{a.seed}" + ("_smoke" if SMOKE else "")
     out = Path(a.out or f"results/phase1/{tag}.json")
     assert not out.exists(), f"{out} exists; new run, new file"
@@ -129,16 +177,18 @@ def main():
     # The utility gate is a ratio against this model before training, measured now on the
     # same corpus and line count the run will use. Hardcoding an absolute number would
     # silently go stale when the corpus, the line count or the base model changes.
-    base_ppl = perplexities(model, tok, n_lines=ev_cfg.get("ppl_lines", 200)) if cfg.get("max_ppl_ratio") else {}
-    max_ppl = base_ppl[GATE_CORPUS] * cfg["max_ppl_ratio"] if base_ppl else cfg.get("max_ppl")
-    if base_ppl:
-        print("base ppl " + "  ".join(f"{k}={v:.2f}" for k, v in base_ppl.items()) + f"  -> gate {GATE_CORPUS} <= {max_ppl:.2f} ({cfg['max_ppl_ratio']}x)")
-    ref = None
+    # Per-epoch gate preview uses the per-epoch line count; the final gate is recomputed
+    # in final_gate on the final line count.
+    base_ppl = perplexities(model, tok, n_lines=ev_cfg.get("ppl_lines", 200))
+    max_ppl = base_ppl[GATE_CORPUS] * cfg["max_ppl_ratio"]
+    print("base ppl " + "  ".join(f"{k}={v:.2f}" for k, v in base_ppl.items()) + f"  -> gate {GATE_CORPUS} <= {max_ppl:.2f} ({cfg['max_ppl_ratio']}x)")
+    # Frozen base model: the KL reference, and the base for the final perplexity gate.
+    ref, _ = load(cfg["model"])
+    ref.requires_grad_(False)
     if cfg.get("kl_weight") and replay:
-        ref, _ = load(cfg["model"])
-        ref.requires_grad_(False)
         print(f"kl to base on replay tokens, weight {cfg['kl_weight']}")
-    loss_fn = lambda m, b, aux=None: lm_loss(m, b, aux, replay_weight=cfg.get("replay_weight", 1.0), ref=ref, kl_weight=cfg.get("kl_weight", 0.0))
+    kl_ref = ref if cfg.get("kl_weight") and replay else None
+    loss_fn = lambda m, b, aux=None: lm_loss(m, b, aux, replay_weight=cfg.get("replay_weight", 1.0), ref=kl_ref, kl_weight=cfg.get("kl_weight", 0.0))
     history = train(
         model,
         tok,
@@ -159,11 +209,7 @@ def main():
     )
 
     print("final eval on all facts")
-    final = quick_eval(model, tok, data, None, ev_cfg["k_alts"], a.seed, ppl_lines=20 if SMOKE else 1000)
-    ok = success(final, cfg["success_accuracy"], max_ppl)
-    ppl_txt = "  ".join(f"{k}={v:.2f}" for k, v in final.get("ppl_by_corpus", {}).items())
-    print(f"success={ok}  ppl {ppl_txt} (gate {GATE_CORPUS} <= {max_ppl:.2f})  " if max_ppl else f"success={ok}  ppl {ppl_txt}  ")
-    print("  " + " ".join(f"{d}/{s}={final[d][s]['accuracy']:.2f}" for d in ("d_fwd", "d_rev", "s_fwd") for s in D.SETS))
+    final, ok, base_ppl_final, max_ppl = final_gate(model, tok, data, ref, cfg, a.seed)
 
     if save:
         save.mkdir(parents=True, exist_ok=True)
@@ -175,7 +221,7 @@ def main():
             "config": {**cfg, "facts": facts_file, "facts_sha": facts_sha, "smoke": SMOKE, "checkpoint": str(save) if save else None},
             "git_commit": commit,
             "seed": a.seed,
-            "metrics": {"final": final, "success": ok, "base_ppl": base_ppl, "max_ppl": max_ppl, "steps": history[-1]["step"], "epochs": history[-1]["epoch"]},
+            "metrics": {"final": final, "success": ok, "base_ppl": base_ppl_final, "base_ppl_per_epoch": base_ppl, "max_ppl": max_ppl, "steps": history[-1]["step"], "epochs": history[-1]["epoch"]},
             "history": history,
         },
         open(out, "w"),

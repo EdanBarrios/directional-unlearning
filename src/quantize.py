@@ -28,7 +28,7 @@ from pathlib import Path
 import torch
 
 from src import data as D
-from src.probe import DIRECTIONS, aggregate, perplexity, print_summary, probe
+from src.probe import DIRECTIONS, GATE_CORPUS, aggregate, perplexities, print_summary, probe
 from src.seed import set_seed
 from src.util import file_sha, git_commit
 
@@ -62,9 +62,11 @@ def deltas(quantized, fp32):
     for d in DIRECTIONS:
         q, f = quantized[d]["forget"], fp32[d]["forget"]
         out[d] = {
-            "fp32_accuracy": f["accuracy"],
-            "nf4_accuracy": q["accuracy"],
-            "d_accuracy": q["accuracy"] - f["accuracy"],
+            "fp32_accuracy": f["cand_accuracy"],
+            "nf4_accuracy": q["cand_accuracy"],
+            "d_accuracy": q["cand_accuracy"] - f["cand_accuracy"],
+            "fp32_greedy_accuracy": f.get("accuracy"),
+            "nf4_greedy_accuracy": q.get("accuracy"),
             "fp32_margin_corr": f.get("margin_corr"),
             "nf4_margin_corr": q.get("margin_corr"),
             "d_margin_corr": (q.get("margin_corr") - f.get("margin_corr")) if q.get("margin_corr") is not None and f.get("margin_corr") is not None else None,
@@ -95,7 +97,9 @@ def main():
     model, tok = load_nf4(a.checkpoint)
     rows = probe(model, tok, data, k_alts=None, seed=a.seed, batch_size=a.batch_size)
     metrics, per_fact = aggregate(rows)
-    metrics["ppl"] = perplexity(model, tok)
+    # Same corpora and gate corpus as every other phase; perplexity() alone defaults to wikitext.
+    metrics["ppl_by_corpus"] = perplexities(model, tok)
+    metrics["ppl"] = metrics["ppl_by_corpus"][GATE_CORPUS]
     print_summary(metrics)
 
     dl = deltas(metrics, fp32["metrics"])

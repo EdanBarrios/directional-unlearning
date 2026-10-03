@@ -12,10 +12,17 @@ Faster recovery in U-fwd than U-both, with U-fwd+dose looking like U-fwd, is evi
 that the directions share structure. All three the same is evidence they are independent
 entries. U-fwd+dose looking like U-both means the effect is general damage, not direction.
 
+Transfer (decision 22): every eval also probes the reverse direction. If relearning
+forward in U-both brings reverse back with it, the two directions share structure, a
+more direct test than relearning speed alone. Curves are stored per fact, so conditions
+can be compared fact by fact (all start from the same M1).
+
 Every parameter here is pre-registered (HANDOFF 7.4 / decision 17) because the outcome
 is a comparison of curves, and a threshold chosen after seeing them would choose itself.
+The target is target_fraction of M1's own forget-set forward candidate accuracy, read
+from M1's Phase 3 results file (decision 21).
 
-    python -m src.relearn --config configs/relearn.yaml --checkpoint checkpoints/npo_gd_u_fwd_seed0 --seed 0
+    python -m src.relearn --checkpoint checkpoints/npo_gd_u_fwd_seed0 --m1-results results/phase3/M1.json --seed 0
 """
 
 import argparse
@@ -45,13 +52,13 @@ def relearn_records(data, n_templates, seed):
 
 
 def forget_eval(model, tok, data, k_alts, seed):
-    """Recovery probe: forget set, held-out forward prompts."""
-    rows = probe(model, tok, data, directions=("d_fwd",), sets=("forget",), k_alts=k_alts, seed=seed, quiet=True)
-    metrics, _ = aggregate(rows)
-    return metrics["d_fwd"]["forget"]
+    """Recovery probe: forget set, held-out prompts, both D directions, per fact."""
+    rows = probe(model, tok, data, directions=("d_fwd", "d_rev"), sets=("forget",), k_alts=k_alts, seed=seed, quiet=True)
+    metrics, per_fact = aggregate(rows)
+    return {**metrics, "per_fact": per_fact}
 
 
-def recovery(history, target):
+def recovery(history, target, direction="d_fwd", key="cand_accuracy"):
     """Steps to reach the target accuracy, and normalized area under the recovery curve.
 
     AUC is trapezoidal over (step, accuracy) divided by the step span, so it is a mean
@@ -59,8 +66,9 @@ def recovery(history, target):
     separates "recovered late but fully" from "recovered early", which steps-to-threshold
     alone cannot.
     """
-    pts = [(0, history[0]["eval"]["accuracy"])] if history[0]["step"] != 0 else []
-    pts += [(h["step"], h["eval"]["accuracy"]) for h in history]
+    val = lambda h: h["eval"][direction]["forget"][key]
+    pts = [(0, val(history[0]))] if history[0]["step"] != 0 else []
+    pts += [(h["step"], val(h)) for h in history]
     hit = next((s for s, a in pts if a >= target), None)
     area = sum((pts[i][0] - pts[i - 1][0]) * (pts[i][1] + pts[i - 1][1]) / 2 for i in range(1, len(pts)))
     span = pts[-1][0] - pts[0][0]
@@ -71,7 +79,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--config", default="configs/relearn.yaml")
     p.add_argument("--checkpoint", required=True, help="an unlearned model, or M1 for the sanity check")
-    p.add_argument("--target-accuracy", type=float, help="overrides the config; normally derived from M1")
+    p.add_argument("--m1-results", required=True, help="M1's Phase 3 results json; the recovery target is derived from it")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--facts", default="data/facts.json")
     p.add_argument("--out")
@@ -82,7 +90,8 @@ def main():
     cfg = yaml.safe_load(open(a.config))
     if SMOKE:
         cfg.update(max_steps=SMOKE_STEPS, batch_size=4, eval_every=1, n_templates=1)
-    target = a.target_accuracy if a.target_accuracy is not None else cfg["target_accuracy"]
+    m1 = json.load(open(a.m1_results))["metrics"]
+    target = cfg["target_fraction"] * m1["d_fwd"]["forget"]["cand_accuracy"]
     tag = Path(a.checkpoint).name + f"_seed{a.seed}" + ("_smoke" if SMOKE else "")
     out = Path(a.out or f"results/phase4/{tag}.json")
     assert not out.exists(), f"{out} exists; new run, new file"
@@ -96,7 +105,9 @@ def main():
     print(f"relearn {a.checkpoint}: {len(recs)} records ({cfg['n_templates']} templates x {len(recs)//cfg['n_templates']} facts), lr={cfg['lr']:g}, target acc={target:.2f}")
 
     start = forget_eval(model, tok, data, cfg["eval"]["k_alts"], a.seed)
-    print(f"  start: acc={start['accuracy']:.2f} margin={start['margin']:+.3f}")
+    for d in ("d_fwd", "d_rev"):
+        m = start[d]["forget"]
+        print(f"  start {d}: cand={m['cand_accuracy']:.2f} greedy={m['accuracy']:.2f} margin={m['margin']:+.3f}")
 
     history = train(
         model,
@@ -113,7 +124,11 @@ def main():
     )
     history = [{"step": 0, "epoch": 0, "loss": None, "eval": start, "time_s": 0.0}] + history
     rec = recovery(history, target)
-    print(f"  steps_to_threshold={rec['steps_to_threshold']} auc={rec['auc']:.3f} final_acc={history[-1]['eval']['accuracy']:.2f}")
+    # Transfer: the reverse direction's curve while only forward is trained. No threshold
+    # is pre-registered for it; it is reported as a curve and AUC.
+    transfer = recovery(history, target, direction="d_rev")
+    print(f"  d_fwd steps_to_threshold={rec['steps_to_threshold']} auc={rec['auc']:.3f} final cand={history[-1]['eval']['d_fwd']['forget']['cand_accuracy']:.2f}")
+    print(f"  d_rev (transfer) auc={transfer['auc']:.3f} start cand={start['d_rev']['forget']['cand_accuracy']:.2f} final cand={history[-1]['eval']['d_rev']['forget']['cand_accuracy']:.2f}")
 
     if a.save and not a.no_save:
         Path(a.save).mkdir(parents=True, exist_ok=True)
@@ -122,10 +137,10 @@ def main():
     out.parent.mkdir(parents=True, exist_ok=True)
     json.dump(
         {
-            "config": {**cfg, "start_checkpoint": a.checkpoint, "target_accuracy": target, "facts": facts_file, "facts_sha": facts_sha, "smoke": SMOKE},
+            "config": {**cfg, "start_checkpoint": a.checkpoint, "m1_results": a.m1_results, "target_accuracy": target, "facts": facts_file, "facts_sha": facts_sha, "smoke": SMOKE},
             "git_commit": commit,
             "seed": a.seed,
-            "metrics": {**rec, "start": start, "final": history[-1]["eval"]},
+            "metrics": {**rec, "transfer_d_rev": transfer, "start": start, "final": history[-1]["eval"]},
             "history": history,
         },
         open(out, "w"),

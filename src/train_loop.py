@@ -120,11 +120,13 @@ def fmt_eval(ev):
         # margin_corr is absent when the probe covers too few facts to estimate a prior
         # (it needs this answer scored under other entities' prompts).
         corr = f" corr={ev['margin_corr']:+.3f}" if ev.get("margin_corr") is not None else ""
-        return f"acc={ev['accuracy']:.2f} margin={ev['margin']:+.3f}{corr}"
+        cand = f"cand={ev['cand_accuracy']:.2f} " if "cand_accuracy" in ev else ""
+        return f"{cand}acc={ev['accuracy']:.2f} margin={ev['margin']:+.3f}{corr}"
     parts = [f"ppl={ev['ppl']:.1f}"] if ev.get("ppl") else []
     for d in ("d_fwd", "d_rev", "s_fwd"):
         if d not in ev:
             continue
-        cells = [f"{s[:3]}={ev[d][s]['accuracy']:.2f}/{ev[d][s].get('margin_corr', ev[d][s]['margin']):+.2f}" for s in SETS if s in ev[d]]
+        # candidate accuracy / corrected margin (raw margin when no prior is available)
+        cells = [f"{s[:3]}={ev[d][s].get('cand_accuracy', ev[d][s].get('accuracy', float('nan'))):.2f}/{ev[d][s].get('margin_corr', ev[d][s]['margin']):+.2f}" for s in SETS if s in ev[d]]
         parts.append(d + " " + " ".join(cells))
     return " | ".join(parts)

@@ -28,9 +28,11 @@ kaggle_launch.ipynb    clone, pip install, run. Nothing else lives in notebooks.
 python -m data.gen_facts --n 150 --out data/facts.json
 python -m src.probe --model EleutherAI/pythia-160m --facts data/facts.json --out results/phase0/base.json
 python -m src.finetune --config configs/phase1.yaml --seed 0
+python -m src.finetune --rescore checkpoints/M1 --out results/phase1/M1_rescore.json
+python -m src.evaluate --checkpoint checkpoints/M1 --out results/phase3/M1.json
 python -m src.unlearn  --config configs/npo_gd.yaml --condition u_fwd --seed 0
 python -m src.evaluate --checkpoint checkpoints/npo_gd_u_fwd_seed0 --baseline results/phase3/M1.json --out results/phase3/npo_gd_u_fwd_seed0.json
-python -m src.relearn  --config configs/relearn.yaml --checkpoint checkpoints/npo_gd_u_fwd_seed0 --seed 0
+python -m src.relearn  --config configs/relearn.yaml --checkpoint checkpoints/npo_gd_u_fwd_seed0 --m1-results results/phase3/M1.json --seed 0
 python -m src.quantize --checkpoint checkpoints/npo_gd_u_both_seed0 --fp32-results results/phase3/npo_gd_u_both_seed0.json --out results/phase5/...
 ```
 
@@ -60,4 +62,5 @@ Phase 5 needs CUDA: `uv sync --extra cuda` on a CUDA box, never locally.
 - Python env is managed by `uv`, which is what an arm64 or Linux box would use. On this laptop it cannot resolve, so the working path is Kaggle: `pip install` from `pyproject.toml`.
 - Small pure functions. No state that exists only in a notebook cell.
 - Short docstrings. No em-dashes in docs, comments, or commit messages.
-- If a run fails the C1 check (forward accuracy not near zero after unlearning), mark it failed in the results file and stop. Do not tune until it passes.
+- Accuracy in every gate and control is candidate accuracy (rank 1 of 150), not greedy. HANDOFF decision 21.
+- If a run fails the C1 check (target-direction candidate accuracy not near zero after unlearning), mark it failed in the results file and stop. Do not tune until it passes.

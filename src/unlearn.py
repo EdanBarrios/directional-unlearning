@@ -5,16 +5,20 @@ regularizer is the retain set in every condition, so the conditions are comparab
 
     condition    | ascended                                   | groups
     u_fwd        | forget D forward                           | 50
+    u_rev        | forget D reverse                           | 50
     u_both       | forget D forward + D reverse               | 100
     u_fwd_dose   | forget D forward + dose-set D forward      | 100
 
 u_fwd_dose matches u_both's dose, so a difference between them is about direction
-rather than about how much unlearning happened (control C6).
+rather than about how much unlearning happened (control C6). u_rev mirrors u_fwd, so
+Q0 is a 2x2: does the other direction survive, whichever one is removed (decision 22).
 
-Stop rule (C1): probe the forget set's held-out forward prompts every `eval_every`
-steps and stop when raw margin <= 0 and accuracy <= 0.05. If the step cap is reached
-first, the run is marked failed and must be excluded from analysis, not tuned until
-it passes.
+Stop rule (C1): probe the forget set's held-out prompts every `eval_every` steps and
+stop when the target direction's raw margin <= 0 and candidate accuracy <= 0.05. The
+target is d_rev for u_rev and d_fwd otherwise. If the step cap is reached first, the
+run is marked failed and must be excluded from analysis, not tuned until it passes.
+Every eval records both D directions per fact, and the dose set for u_fwd_dose, so the
+trajectory of the surviving direction and the delivered dose are in the results file.
 
     python -m src.unlearn --config configs/npo_gd.yaml --condition u_fwd --seed 0
 """
@@ -37,6 +41,7 @@ from src.util import SMOKE, SMOKE_STEPS, file_sha, git_commit
 # condition -> (direction, set) pairs to push against
 CONDITIONS = {
     "u_fwd": [("d_fwd", "forget")],
+    "u_rev": [("d_rev", "forget")],
     "u_both": [("d_fwd", "forget"), ("d_rev", "forget")],
     "u_fwd_dose": [("d_fwd", "forget"), ("d_fwd", "dose")],
 }
@@ -55,11 +60,15 @@ def retain_records(data):
     return D.train_records(data, sets=("retain",))
 
 
-def forget_eval(model, tok, data, k_alts, seed):
-    """Stop-rule probe: forget set, held-out forward prompts only."""
-    rows = probe(model, tok, data, directions=("d_fwd",), sets=("forget",), k_alts=k_alts, seed=seed, quiet=True)
-    metrics, _ = aggregate(rows)
-    return metrics["d_fwd"]["forget"]
+# The direction each condition removes; the stop rule and C1 watch it.
+TARGET = {"u_fwd": "d_fwd", "u_rev": "d_rev", "u_both": "d_fwd", "u_fwd_dose": "d_fwd"}
+
+
+def forget_eval(model, tok, data, k_alts, seed, sets=("forget",)):
+    """Held-out prompts, both D directions, per set and per fact."""
+    rows = probe(model, tok, data, directions=("d_fwd", "d_rev"), sets=sets, k_alts=k_alts, seed=seed, quiet=True)
+    metrics, per_fact = aggregate(rows)
+    return {**metrics, "per_fact": per_fact}
 
 
 def main():
@@ -103,11 +112,16 @@ def main():
     groups = len({(r["fact_id"], r["direction"]) for r in ascend})
     print(f"{method} / {a.condition} / seed {a.seed}: {len(ascend)} ascend records ({groups} fact-direction groups), {len(retain)} retain records")
 
-    baseline = forget_eval(model, tok, data, cfg["eval"]["k_alts"], a.seed)
-    print(f"  M1 baseline forget d_fwd: acc={baseline['accuracy']:.2f} margin={baseline['margin']:+.3f}")
+    target = TARGET[a.condition]
+    sets = ("forget", "dose") if a.condition == "u_fwd_dose" else ("forget",)
+    evaluate = lambda m: forget_eval(m, tok, data, cfg["eval"]["k_alts"], a.seed, sets)
+    baseline = evaluate(model)
+    t = baseline[target]["forget"]
+    print(f"  M1 baseline forget {target}: cand={t['cand_accuracy']:.2f} greedy={t['accuracy']:.2f} margin={t['margin']:+.3f}")
 
     def stop(ev):
-        return ev["margin"] <= cfg["stop"]["margin"] and ev["accuracy"] <= cfg["stop"]["accuracy"]
+        t = ev[target]["forget"]
+        return t["margin"] <= cfg["stop"]["margin"] and t["cand_accuracy"] <= cfg["stop"]["accuracy"]
 
     history = train(
         model,
@@ -120,7 +134,7 @@ def main():
         aux_records=retain,
         aux_batch_size=cfg.get("retain_batch_size"),
         max_steps=cfg["max_steps"],
-        eval_fn=lambda m, step, epoch: forget_eval(m, tok, data, cfg["eval"]["k_alts"], a.seed),
+        eval_fn=lambda m, step, epoch: evaluate(m),
         eval_every_steps=cfg["eval_every"],
         stop_fn=stop,
         grad_clip=cfg.get("grad_clip", 1.0),
@@ -129,7 +143,8 @@ def main():
     final = history[-1]["eval"]
     unlearned = stop(final)
     steps = history[-1]["step"]
-    print(f"  {'UNLEARNED' if unlearned else 'FAILED C1 (hit step cap)'} at step {steps}: acc={final['accuracy']:.2f} margin={final['margin']:+.3f}")
+    t = final[target]["forget"]
+    print(f"  {'UNLEARNED' if unlearned else 'FAILED C1 (hit step cap)'} at step {steps}: {target} cand={t['cand_accuracy']:.2f} greedy={t['accuracy']:.2f} margin={t['margin']:+.3f}")
 
     if save and unlearned:
         save.mkdir(parents=True, exist_ok=True)
@@ -144,6 +159,7 @@ def main():
             "config": {
                 **cfg,
                 "condition": a.condition,
+                "target": target,
                 "start_checkpoint": a.checkpoint,
                 "facts": facts_file,
                 "facts_sha": facts_sha,

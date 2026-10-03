@@ -11,6 +11,6 @@ eval_every: 10
 grad_clip: 1.0
 stop:
   margin: 0.0             # raw margin, as pre-registered
-  accuracy: 0.05
+  accuracy: 0.05          # candidate accuracy, target direction (decision 21)
 eval:
-  k_alts: 20              # in-loop alternatives (HANDOFF decision 12)
+  k_alts: null              # all 149: candidate accuracy is 150-way everywhere (decision 21)

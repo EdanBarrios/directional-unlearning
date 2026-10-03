@@ -1,4 +1,4 @@
-"""Log-prob margin and greedy accuracy, both directions, plus held-out perplexity.
+"""Log-prob margin, candidate accuracy and greedy accuracy, all directions, plus perplexity.
 
 Raw margin for one prompt: mean per-token log-prob of the correct answer under teacher
 forcing, minus the mean of that quantity over alternative answers (other entities'
@@ -6,6 +6,15 @@ answers for the same direction). Chance is zero on average, but each answer stri
 its own prior (how plausible it is after anyone's prompt). The corrected margin
 subtracts that prior, estimated from the same answer's scores under other entities'
 prompts, so chance is zero per fact. Both are reported. Raw token sums too.
+
+Candidate accuracy (the primary accuracy metric since decision 21): a prompt is a hit
+when the correct answer has the highest mean per-token log-prob among all candidates,
+i.e. rank 1 of 150 with k_alts=None. Chance is 1/150. It does not depend on how a
+template's natural continuation is phrased, which greedy accuracy does: a model that
+keeps general English writes " the" after "they mean" and misses, and a collapsed model
+that knows only the dataset hits. cand_accuracy_corr ranks prior-corrected scores
+instead, so an answer string that is plausible after anyone's prompt gets no credit.
+Greedy accuracy is still reported as `accuracy`, with the generated text kept per row.
 
     python -m src.probe --model EleutherAI/pythia-160m --facts data/facts.json --out results/phase0/base.json
 """
@@ -69,9 +78,10 @@ def answer_logprobs(model, tok, prompt, answers, ans_ids, batch_size=64):
 
 @torch.no_grad()
 def greedy_hits(model, tok, records, batch_size=32):
-    """Generate len(answer) tokens greedily; hit if decoded text starts with the answer."""
+    """Generate len(answer) tokens greedily; hit if decoded text starts with the answer.
+    Returns (hits, generated texts)."""
     tok.padding_side = "left"
-    hits = []
+    hits, gens = [], []
     for i in range(0, len(records), batch_size):
         chunk = records[i : i + batch_size]
         enc = tok([r["prompt"] for r in chunk], return_tensors="pt", padding=True).to(model.device)
@@ -79,8 +89,9 @@ def greedy_hits(model, tok, records, batch_size=32):
         out = model.generate(**enc, max_new_tokens=n_new, do_sample=False, pad_token_id=tok.pad_token_id)
         gen = tok.batch_decode(out[:, enc["input_ids"].shape[1] :], skip_special_tokens=True)
         hits += [g.startswith(r["answer"]) for g, r in zip(gen, chunk)]
+        gens += gen
     tok.padding_side = "right"
-    return hits
+    return hits, gens
 
 
 def alternative_ids(all_ids, fact_id, k, seed):
@@ -96,10 +107,10 @@ def probe(model, tok, data, directions=DIRECTIONS, split="heldout", sets=None, k
     rows = []
     for d in directions:
         recs = D.prompts(data, d, split, sets, fact_ids)
-        hits = greedy_hits(model, tok, recs, batch_size) if accuracy else [None] * len(recs)
+        hits, gens = greedy_hits(model, tok, recs, batch_size) if accuracy else ([None] * len(recs), [None] * len(recs))
         all_ans = D.answers(data, d)
         ids = {a: tok(a)["input_ids"] for a in all_ans.values()}
-        for r, hit in tqdm(list(zip(recs, hits)), desc=f"probe {d}", disable=quiet, leave=False):
+        for r, hit, gen in tqdm(list(zip(recs, hits, gens)), desc=f"probe {d}", disable=quiet, leave=False):
             alt = alternative_ids(all_ans, r["fact_id"], k_alts, seed)
             cand = [r["answer"]] + [all_ans[i] for i in alt]
             means, sums = answer_logprobs(model, tok, r["prompt"], cand, [ids[c] for c in cand], batch_size)
@@ -112,7 +123,10 @@ def probe(model, tok, data, directions=DIRECTIONS, split="heldout", sets=None, k
                     margin_sum=sums[0] - statistics.mean(sums[1:]),
                     alt_ids=alt,
                     cand_mean=[round(m, 4) for m in means],
+                    cand_sum=[round(x, 4) for x in sums],
+                    cand_hit=means[0] > max(means[1:]),
                     hit=hit,
+                    gen=gen,
                 )
             )
     return rows
@@ -134,6 +148,17 @@ def answer_priors(rows):
     return {k: statistics.mean(v) for k, v in acc.items()}
 
 
+def cand_hit_corrected(row, prior):
+    """Rank-1 after subtracting each candidate's answer prior. None when any candidate
+    lacks a prior (a probe over too few facts to estimate one)."""
+    ids = [row["fact_id"]] + row["alt_ids"]
+    pri = [prior.get((row["direction"], row["template"], fid)) for fid in ids]
+    if any(p is None for p in pri):
+        return None
+    adj = [m - p for m, p in zip(row["cand_mean"], pri)]
+    return adj[0] > max(adj[1:])
+
+
 def aggregate(rows):
     """metrics[direction][set] and per_fact[fact_id][direction], averaged over templates.
     Adds margin_corr (raw margin minus the answer's prior) to every row in place."""
@@ -141,6 +166,7 @@ def aggregate(rows):
     for r in rows:
         r["prior"] = prior.get((r["direction"], r["template"], r["fact_id"]))
         r["margin_corr"] = r["margin"] - r["prior"] if r["prior"] is not None else None
+        r["cand_hit_corr"] = cand_hit_corrected(r, prior)
 
     groups = defaultdict(list)
     per_fact_rows = defaultdict(list)
@@ -154,8 +180,13 @@ def aggregate(rows):
             "margin": statistics.mean(x["margin"] for x in rs),
             "margin_sum": statistics.mean(x["margin_sum"] for x in rs),
             "correct_mean": statistics.mean(x["correct_mean"] for x in rs),
+            "cand_accuracy": statistics.mean(float(x["cand_hit"]) for x in rs),
+            "n_candidates": len(rs[0]["cand_mean"]),
             "n": len(rs),
         }
+        hc = [float(x["cand_hit_corr"]) for x in rs if x["cand_hit_corr"] is not None]
+        if hc:
+            out["cand_accuracy_corr"] = statistics.mean(hc)
         corr = [x["margin_corr"] for x in rs if x["margin_corr"] is not None]
         if corr:
             out["margin_corr"] = statistics.mean(corr)
@@ -280,12 +311,14 @@ def print_summary(metrics):
         for s in ("forget", "dose", "retain", "all"):
             m = metrics[d].get(s)
             if m:
-                acc = f"acc={m['accuracy']:.2f}" if "accuracy" in m else ""
+                cand = f"cand={m['cand_accuracy']:.2f}" + (f"/{m['cand_accuracy_corr']:.2f}" if "cand_accuracy_corr" in m else "")
+                acc = f"greedy={m['accuracy']:.2f}" if "accuracy" in m else ""
                 corr = f"corr={m['margin_corr']:+.3f}" if "margin_corr" in m else ""
-                print(f"  {d} {s:6} margin={m['margin']:+.3f} {corr} sum={m['margin_sum']:+.2f} {acc} n={m['n']}")
-        weak = {ti: m for ti, m in metrics[d].get("per_template", {}).items() if m.get("accuracy", 1) < 0.8}
+                print(f"  {d} {s:6} {cand} {acc} margin={m['margin']:+.3f} {corr} sum={m['margin_sum']:+.2f} n={m['n']}")
+        tpl = metrics[d].get("per_template", {})
+        weak = {ti: m for ti, m in tpl.items() if m.get("accuracy", 1) < 0.8 or m["cand_accuracy"] < 0.8}
         if weak:
-            print(f"  {d} weak templates: " + " ".join(f"t{ti}={m['accuracy']:.2f}" for ti, m in sorted(weak.items())))
+            print(f"  {d} weak templates (cand/greedy): " + " ".join(f"t{ti}={m['cand_accuracy']:.2f}/{m.get('accuracy', float('nan')):.2f}" for ti, m in sorted(weak.items())))
     if "ppl_by_corpus" in metrics:
         print("  ppl " + "  ".join(f"{k}={v:.2f}" + ("*" if k == GATE_CORPUS else "") for k, v in metrics["ppl_by_corpus"].items()) + "   (* = the C2 gate corpus)")
     elif "ppl" in metrics:
