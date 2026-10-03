@@ -333,7 +333,7 @@ November: Gemma 4 Developer Agent Competition (Kaggle, final submission 2026-12-
 
 | Job | Where | Commit | What it answers |
 |---|---|---|---|
-| Re-score of the KL model as M1 | Kaggle, latest version of `du-phase1-replay`, input dataset `du-m1-kl` | `4cec248` launcher | First real run of the decision 21/22 code (smoke runs every phase). Prints greedy generations for d_fwd t26/t28/t29, d_rev t26, s_fwd t9. Ends on the Phase 1 assert by design, since item 18 already shows this model fails |
+| Re-score of the KL model as M1 | Kaggle, latest version of `du-phase1-replay`, input dataset `du-m1-kl` | `5294ce5` | First real run of the decision 21/22 code (smoke runs every phase). Prints greedy generations for d_fwd t26/t28/t29, d_rev t26, s_fwd t9. Ends on the Phase 1 assert by design, since item 18 already shows this model fails |
 | A: KL recipe + 58 extra training templates, 5 epochs | Colab tab, `colab_A_aug.ipynb` | `5dc4a93` | Does template diversity fix t26/t9 (decision 23)? |
 | B: KL recipe at lr 3e-5, 10 epochs | Kaggle notebook `du-phase1-kl-lr3e-5` | `5dc4a93` | Do bigger updates generalize better now that KL holds perplexity? |
 
