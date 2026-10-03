@@ -9,7 +9,10 @@ epochs: 10
 batch_size: 32
 grad_clip: 1.0
 
-replay_ratio: 1.0       # general-text tokens per fact token
+replay_ratio: 1.0       # general-text tokens per fact token; ignored when replay_fresh
+replay_fresh: true      # never repeat a replay sequence (decision 19). The ratio-1.0 pool
+                        # was reused ~15x per sequence over 10 epochs; ppl still hit 2290
+replay_corpus: wikitext-103-raw-v1
 replay_max_len: 64      # keeps replay batches close to fact-sequence length
 replay_batch_size: 16
 replay_weight: 1.0

@@ -98,8 +98,19 @@ def main():
     replay = None
     if cfg.get("replay_ratio", 0):
         fact_tokens = D.count_tokens(tok, records)
-        replay = D.replay_records(tok, int(fact_tokens * cfg["replay_ratio"]), cfg.get("replay_max_len", 64), a.seed)
-        print(f"replay: {len(replay)} sequences, {D.count_tokens(tok, replay)} tokens vs {fact_tokens} fact tokens (ratio {cfg['replay_ratio']})")
+        max_len = cfg.get("replay_max_len", 64)
+        corpus = cfg.get("replay_corpus", "wikitext-2-raw-v1")
+        if cfg.get("replay_fresh"):
+            # Enough sequences that every step draws ones never seen before. A small pool
+            # reused for 10 epochs gets memorized and stops protecting general text.
+            steps = cfg["epochs"] * -(-len(records) // cfg["batch_size"])
+            if cfg.get("max_steps"):
+                steps = min(steps, cfg["max_steps"])
+            n_tokens = steps * cfg["replay_batch_size"] * max_len
+        else:
+            n_tokens = int(fact_tokens * cfg["replay_ratio"])
+        replay = D.replay_records(tok, n_tokens, max_len, a.seed, corpus)
+        print(f"replay ({corpus}, fresh={bool(cfg.get('replay_fresh'))}): {len(replay)} sequences, {D.count_tokens(tok, replay)} tokens vs {fact_tokens} fact tokens")
     print(f"{len(records)} training sequences, lr={cfg['lr']:g}, epochs={cfg['epochs']}, batch={cfg['batch_size']}")
 
     ev_cfg = cfg["eval"]
@@ -121,6 +132,7 @@ def main():
         seed=a.seed,
         aux_records=replay,
         aux_batch_size=cfg.get("replay_batch_size"),
+        aux_fresh=bool(cfg.get("replay_fresh")),
         epochs=cfg["epochs"],
         max_steps=cfg.get("max_steps"),
         eval_fn=lambda m, step, epoch: quick_eval(m, tok, data, ev_cfg["facts_per_set"], ev_cfg["k_alts"], a.seed, ev_cfg.get("ppl_lines", 0)),

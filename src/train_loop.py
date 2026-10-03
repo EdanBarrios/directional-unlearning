@@ -23,6 +23,7 @@ def train(
     seed,
     aux_records=None,
     aux_batch_size=None,
+    aux_fresh=False,
     epochs=None,
     max_steps=None,
     eval_fn=None,
@@ -37,6 +38,8 @@ def train(
     `records` drives the epoch. `aux_records` (the retain set, for a regularized
     unlearning loss) is sampled independently each step and passed to loss_fn as its
     third argument, so the retain term sees fresh examples rather than a fixed pairing.
+    With aux_fresh, aux_records are consumed in one shuffled pass instead, so no aux
+    sequence is seen twice until the pool runs out (Phase 1 replay, decision 19).
 
     eval_fn(model, step, epoch) -> dict is called at eval points; stop_fn(eval) -> bool
     ends training early. Loss in each history entry is the running mean since the last one.
@@ -46,6 +49,7 @@ def train(
     r = rng(seed)
     r_aux = rng(seed + 1000)
     aux_bs = aux_batch_size or batch_size
+    aux_order, aux_pos = [], 0
     history, step, epoch = [], 0, 0
     losses, t0 = [], time.time()
 
@@ -66,7 +70,17 @@ def train(
         r.shuffle(order)
         for i in range(0, len(order), batch_size):
             batch = encode(tok, [records[j] for j in order[i : i + batch_size]], model.device)
-            aux = encode(tok, r_aux.sample(aux_records, min(aux_bs, len(aux_records))), model.device) if aux_records else None
+            aux = None
+            if aux_records and aux_fresh:
+                if aux_pos + aux_bs > len(aux_order):
+                    if aux_order:
+                        log(f"  aux pool exhausted at step {step}; reshuffling, sequences will repeat")
+                    aux_order, aux_pos = list(range(len(aux_records))), 0
+                    r_aux.shuffle(aux_order)
+                aux = encode(tok, [aux_records[j] for j in aux_order[aux_pos : aux_pos + aux_bs]], model.device)
+                aux_pos += aux_bs
+            elif aux_records:
+                aux = encode(tok, r_aux.sample(aux_records, min(aux_bs, len(aux_records))), model.device)
             loss = loss_fn(model, batch, aux)
             opt.zero_grad(set_to_none=True)
             loss.backward()

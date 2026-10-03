@@ -71,17 +71,18 @@ def train_records(data: dict, directions=("d_fwd", "d_rev", "s_fwd"), sets=None)
     return out
 
 
-def replay_records(tok, n_tokens: int, max_len: int = 64, seed: int = 0) -> list[dict]:
+def replay_records(tok, n_tokens: int, max_len: int = 64, seed: int = 0, corpus: str = "wikitext-2-raw-v1") -> list[dict]:
     """General-text sequences for rehearsal during Phase 1.
 
-    Drawn from WikiText-2 *train*. The C2 perplexity metric uses the *test* split, so
-    the model is never trained on the text it is later measured on.
+    Drawn from a WikiText *train* split. The perplexity metrics use test splits, so the
+    model is never trained on the text it is later measured on. wikitext-103 is large
+    enough that a whole run never repeats a sequence (HANDOFF decision 19).
     """
     from datasets import load_dataset
 
     from src.seed import rng
 
-    ds = load_dataset("Salesforce/wikitext", "wikitext-2-raw-v1", split="train")
+    ds = load_dataset("Salesforce/wikitext", corpus, split="train")
     lines = [t.strip() for t in ds["text"] if t.strip() and not t.strip().startswith("=")]
     rng(seed + 991).shuffle(lines)
     out, total = [], 0
