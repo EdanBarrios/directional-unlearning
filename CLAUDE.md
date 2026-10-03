@@ -18,6 +18,7 @@ src/losses.py          lm, gradient ascent, NPO
 src/finetune.py        Phase 1     src/unlearn.py   Phase 2
 src/relearn.py         Phase 4     src/quantize.py  Phase 5
 src/evaluate.py        Phase 3 → results/*.json
+src/report.py          writeup tables, regenerated from any results file
 configs/*.yaml         one per phase and method
 kaggle_launch.ipynb    clone, pip install, run. Nothing else lives in notebooks.
 ```
