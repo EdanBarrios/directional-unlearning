@@ -1,6 +1,6 @@
 # Handoff v2: Directional Structure of LLM Unlearning
 
-Status: design locked 2026-09-16. No code written. Supersedes v1.
+Status: design locked 2026-09-16. Code written for all phases (2026-09-18). Plan reset 2026-10-02, see section 10. Supersedes v1.
 
 ## 0. How to use this document
 
@@ -11,7 +11,8 @@ Paste it into any new chat session, along with `docs/CONTEXT.md` (machine, accou
 ## 1. Who is running this
 
 - Edan Barrios. B.S. EECS, UC Berkeley, Summer 2026. AI Engineer at Paradigm Study.
-- Applied to MATS Winter 2027, Empirical track. Submitted Sep 6, 2026. Decisions early-to-mid November. Stream selection at Stage 2, so streams are not fixed.
+- Applied to MATS Winter 2027, Empirical track, Sep 6, 2026. Rejected. Next round opens 2026-10-31; reapplying. Round 1 is quantitative reasoning (chart percentages, spatial, probability). The required technical is 90 minutes building a physics simulator with a weak LLM for help.
+- Volo takes at least 4 h/day. Everything here fits around that.
 - Background: production ML engineering (RAG systems, CV pipelines, C++ systems). Strong on systems and architecture. Heavy user of CLI AI coding tools; unassisted PyTorch fluency not recently measured. Assume implementation help is welcome. Do not assume fluency with training loops or HuggingFace internals.
 - Has read closely, comprehension verified: Chinchilla, Deep Double Descent, Pre-LN vs Post-LN, Reward Model Overoptimization, Tensor Programs V, The Reversal Curse.
 - Has run zero experiments. This is the first. "Something finished" outranks novelty.
@@ -19,12 +20,12 @@ Paste it into any new chat session, along with `docs/CONTEXT.md` (machine, accou
 ### Hardware and budget
 
 - Local: **cannot reproduce the pinned environment.** The laptop is a 2020 MacBook Air, 1.1 GHz Intel i5, 8 GB, Intel Iris, x86_64. (The 2026-09-16 "correction" to an M4 with 16 GB was itself wrong; verified against the machine 2026-09-20.) torch 2.14 publishes no macOS x86_64 wheel, the last on PyPI that did is 2.2.2, and `uv sync` therefore cannot resolve. No MPS, no CUDA. A conda-forge torch 2.5.1 exists in anaconda but is not the pinned environment, so everything, smoke tests included, runs on Kaggle.
-- Compute: free tiers only. Kaggle is primary (about 30 GPU-hours/week, T4 or P100, 12-hour sessions, headless execution via Save Version). Colab and Lightning AI are backups.
+- Compute: Kaggle is primary (about 30 GPU-hours/week, T4 or P100, 12-hour sessions, headless execution via Save Version). Colab Pro via a school account (2026-10-02) is the second pool; it does not run headless, so keep the tab open. Lightning AI is a backup.
 - Everything is sized for Pythia-70m to 410m.
 
 ### Learning preferences
 
-- Plain-language explanation first, then a comprehension check, then depth. Define research terms as they come up (glossary in section 11).
+- Learn by doing (changed 2026-10-02). Ship the next run first; background understanding happens in parallel (NotebookLM podcasts). Claude writes the research code. Edan reads every result and writes 3 sentences of interpretation in section 7 before asking for analysis. Define research terms as they come up (glossary in section 11).
 - Quiz distractors must be length-matched to the correct answer.
 - Short writing, no filler, no em-dashes.
 
@@ -248,6 +249,7 @@ Stop rule: evaluate every 10 steps on the held-out forward prompts of the forget
 9. Whether seeds should also regenerate the dataset. Default no, for interpretability.
 11. Whether the Phase 2 retain regularizer should also include general text, as Phase 1 replay now does. Raised 2026-09-18 after the Phase 1 collapse. The retain set is currently synthetic retain facts only, which is what GA+GD and NPO+GD mean in the literature, and deviating would weaken comparability. But the Phase 1 failure showed that synthetic-only training can destroy general ability while every synthetic metric stays healthy, and GA is the method most likely to do it. Do not pre-emptively change the method: run Phase 2 as defined, and let C2 decide. If C2 fails across conditions for a reason that is clearly general-ability loss rather than retain-fact loss, add general text to the retain mix, state it as a deviation, and re-run both methods so they stay comparable.
 10. Phase 0 rejection threshold. Phase 0 ran 2026-09-17 (`results/phase0/base.json`, commit 27dff65): set-level margins +0.004 / +0.015 / -0.020, 0 of 1800 greedy hits, ppl 48.75. Prompt-swap diagnostic on all outliers: swapped margin equals own margin, so no entity is known; the per-fact spread is answer-string prior. Rule (2026-09-17): reject on any greedy hit, corrected margin > 0.5 in any direction, or a name-level collision with a famous real or fictional entity. First two: none. Third: " Winterfell" (entity 47, retain) swapped for spare "Victor Gibson" via `gen_facts.py --reject 47`. Rerun `base_v2.json` (stamped `dcd6e2d-dirty`: Phase 1 files were edited while it ran; probe numerics regression-checked identical, dataset is commit dcd6e2d's) showed corrected per-fact SD 0.09 to 0.17 and one entity over the 0.5 cutoff: id 148, d_rev corrected +0.62. Rule applied as written: 148 swapped for the next spare (`--reject 47 148`). Final Phase 0 on the final dataset is `results/phase0/base_v3.json`. Rejections are recorded in `facts.json["rejected"]`.
+12. Seeds and scope for the 2026-10-31 deadline (raised 2026-10-02). Decision 6 (5 seeds per cell) is unchanged as the final standard. For the application, Q0 is reported at 3 seeds and Q1 at 1 seed, each labeled as such. Seeds 3 and 4, and Q2 (Phase 5), run in November. Q3 and 410m are cut until then.
 
 ---
 
@@ -288,7 +290,7 @@ CLAUDE.md                conventions for Claude Code
 
 Rules:
 
-- Every script supports `SMOKE=1`: Pythia-70m, 5 facts, 2 templates, 3 steps. Run it locally before any Kaggle run.
+- Every script supports `SMOKE=1`: Pythia-70m, 5 facts, 2 templates, 3 steps. Run it as the first cell of every Kaggle session.
 - Every results JSON records config, git commit hash, seed, and metrics. New run, new file. Never overwrite.
 - Commit before every Kaggle run so results trace to a commit.
 - Never commit tokens, checkpoints, or the HF cache.
@@ -298,17 +300,19 @@ Rules:
 
 ## 10. Immediate next steps
 
-1. Create the repo: this file, `CLAUDE.md`, `.gitignore`, MIT license, README stub that states the project as replication plus extension and cites BAKE, UGBench, GONE, 2604.04943.
-2. `gen_facts.py` and `probe.py`. Run Phase 0 on Kaggle. First real number.
-3. `finetune.py`. Run Phase 1 until success criteria hold. Save M1 as a Kaggle Dataset. First real milestone.
-4. `unlearn.py` with GA+GD. Verify C1 and C2 on one seed. Then NPO+GD.
-5. Phase 3 across the grid. Q0 table.
-6. `relearn.py`. Pre-register item 7.4. Phase 4. Q1.
-7. `quantize.py`. Phase 5. Q2.
-8. Write up. Workshop-paper shape: controlled replication, then the question prior work could not ask.
-9. Read arXiv 2604.04943 this week; it is the mechanistic claim Q1 tests.
+Plan reset 2026-10-02. Target: the MATS reapplication opening 2026-10-31, with a finished Q0 result and first Q1 curves. Hard deadlines, all Sundays except the last:
 
----
+| Due | Output |
+|---|---|
+| Oct 5 | M1 from Phase 1 with replay, passing the perplexity gate. NPO+GD and GA+GD U-fwd seed 0 with C1/C2 checked. (Run launched 2026-10-02 on Kaggle at `f5fd7ba`) |
+| Oct 12 | Q0 table: 2 methods x 3 conditions x 3 seeds in `results/phase3/` |
+| Oct 19 | Q1 relearning curves, all 3 conditions, one figure |
+| Oct 26 | 2-page writeup committed; application answers drafted |
+| Oct 31 | Submit |
+
+Daily minimum: launch one run or solve one problem. Full day: launch a run first thing, Volo 4 h, Alcumus probability 45 min, 60 min of coding without Claude (physics sims and LeetCode), 30 min reading results. Saturdays: 90-minute timed physics sim mock with a weak LLM. Sunday: check-in against this table.
+
+November: Gemma 4 Developer Agent Competition (Kaggle, final submission 2026-12-02), plus Q2 and seeds 3 and 4. Not before the application is in. tensor-lockin is shelved.
 
 ## 11. Glossary
 
